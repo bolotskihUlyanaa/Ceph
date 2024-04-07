@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="ulyana.AppTest" time="0.029" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="ulyana.AppTest" time="0.043" tests="1" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -12,7 +12,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="RU"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/jdk-17.0.2.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/ulanabolotskih/Documents/ceph/target/surefire/surefirebooter11734495452388538251.jar /Users/ulanabolotskih/Documents/ceph/target/surefire 2024-03-31T20-24-37_723-jvmRun1 surefire12400115155572905821tmp surefire_09946847263499383370tmp"/>
+    <property name="sun.java.command" value="/Users/ulanabolotskih/Documents/ceph/target/surefire/surefirebooter1538512372820728396.jar /Users/ulanabolotskih/Documents/ceph/target/surefire 2024-04-07T19-44-31_830-jvmRun1 surefire16485839462190435404tmp surefire_07549526372273183978tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/Users/ulanabolotskih/Documents/ceph/target/test-classes:/Users/ulanabolotskih/Documents/ceph/target/classes:/Users/ulanabolotskih/.m2/repository/junit/junit/4.11/junit-4.11.jar:/Users/ulanabolotskih/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar:"/>
@@ -28,7 +28,7 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
-    <property name="surefire.real.class.path" value="/Users/ulanabolotskih/Documents/ceph/target/surefire/surefirebooter11734495452388538251.jar"/>
+    <property name="surefire.real.class.path" value="/Users/ulanabolotskih/Documents/ceph/target/surefire/surefirebooter1538512372820728396.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="17.0.2+8-LTS-86"/>
@@ -54,5 +54,5 @@
     <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="shouldAnswerWithTrue" classname="ulyana.AppTest" time="0.001"/>
+  <testcase name="shouldAnswerWithTrue" classname="ulyana.AppTest" time="0.002"/>
 </testsuite>

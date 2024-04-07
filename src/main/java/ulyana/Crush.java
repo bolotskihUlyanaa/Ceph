@@ -1,3 +1,5 @@
+package ulyana;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,8 +12,8 @@ public class Crush {
     public List CRUSH(String x, ArrayList map){
         list = new ArrayList<List>();
         list.add(map);//поместить сегмент map в список list
-        select(x, 6);
-        return list;
+        select(x, 3);
+        return list.get(0);
     }
 
     private void select(String x, int n){
@@ -20,29 +22,29 @@ public class Crush {
             for(int r = 1; r <= n; r++){//найти n реплик
                 int fr = 0;//количество "падений" в этой реплике
                 Object o = null;
-                boolean retry_descent = false;
-                while(!retry_descent){//если устройство вышло из строя или перегружено и нужно перераспределить элементы по кластеру хранения
+                boolean retryDescent = false;
+                while(!retryDescent){//если устройство вышло из строя или перегружено и нужно перераспределить элементы по кластеру хранения
                     ArrayList b = new ArrayList<>(i);
-                    boolean retry_bucket = false;
-                    while(!retry_bucket){//для случая коллизии чтобы провести локальный поиск
+                    boolean retryBucket = false;
+                    while(!retryBucket){//для случая коллизии чтобы провести локальный поиск
                         //rNew для следующих случаев: 1)элемент уже выбран(коллизия) 2)сегмент перегружен 3) сегмент вышел из строя
                         int rNew = r + fr * n;
                         o = c(b, rNew, x);//выбираем сегмент из b
                         //в данном случае сюда никогда не попадем
-                        if (!(o instanceof String)){//если не тот тип сегманта который мы ищем
+                        if (!(o instanceof OSD)){//если не тот тип сегманта который мы ищем
                             //b = new ArrayList<>(o);
-                            retry_bucket = true;//кажется что тут ошибка
+                            retryBucket = true;//кажется что тут ошибка
                         }
                         else{
-                            if (O.contains(o)){
+                            if (O.contains(o) || ((OSD) o).isFailed() || ((OSD) o).isOverload()){//isOverload должен ещё отправлятьяс блок
                                 fr++;
                             }
                             if (O.contains(o) && fr < 3){
-                                retry_bucket = true;
+                                retryBucket = true;//кажется что тут ошибка
                             }
                             else{
-                                retry_bucket = true;//в псевдокоде этого нет но мне кажется что нужно
-                                retry_descent = true;
+                                retryBucket = true;//в псевдокоде этого нет но мне кажется что нужно
+                                retryDescent = true;
                             }
                         }
                     }

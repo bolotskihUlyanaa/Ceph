@@ -1,3 +1,5 @@
+package ulyana;
+
 public class Block {
     private String ID;//нужно переделать в тот тип, чтобы название характеризовалось номером inode и номером строки
     private String path;
@@ -13,5 +15,13 @@ public class Block {
 
     public String getName(){
         return ID;
+    }
+
+    public String toString(){
+        StringBuilder data = new StringBuilder();
+        data.append("{ID: " + ID + " ");
+        data.append("path: " + path + "\n");
+        data.append("beign: " + begin + " end: " + end + "}");
+        return data.toString();
     }
 }

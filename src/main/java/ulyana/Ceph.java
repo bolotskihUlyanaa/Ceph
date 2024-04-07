@@ -1,3 +1,5 @@
+package ulyana;
+
 import java.util.*;
 
 public class Ceph {
@@ -10,10 +12,12 @@ public class Ceph {
     }
 
     public void put(Block block){
-        System.out.println(crush.CRUSH(block.getName(), map));
+        List<OSD> osds = crush.CRUSH(block.getName(), map);
+        for(OSD o:osds) o.put(block);
     }
 
-    public List get(Block block){
-        return crush.CRUSH(block.getName(), map);
+    public Block get(Block block){
+        List<OSD> osds = crush.CRUSH(block.getName(), map);
+        return osds.get(0).get();
     }
 }
