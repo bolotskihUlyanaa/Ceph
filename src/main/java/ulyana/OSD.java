@@ -1,7 +1,7 @@
 package ulyana;
 
-public class OSD extends Object {
-    private String IP;
+public class OSD {
+    final private String IP;
     private Block block;
     private boolean overload;//флаг не перегружено ли устройство
     private boolean failed;//флаг работает ли устройство
@@ -29,9 +29,6 @@ public class OSD extends Object {
     }
 
     public String toString(){
-        StringBuilder data = new StringBuilder();
-        data.append("{IP: " + IP + "\n");
-        data.append(block + "}\n");
-        return data.toString();
+        return "{IP: ".concat(IP).concat("\n") + block + "}\n";
     }
 }

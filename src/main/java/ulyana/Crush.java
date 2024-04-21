@@ -12,7 +12,7 @@ public class Crush {
     public List CRUSH(String x, ArrayList map){
         list = new ArrayList<List>();
         list.add(map);//поместить сегмент map в список list
-        select(x, 3);
+        select(x, 1);
         return list.get(0);
     }
 
@@ -22,31 +22,17 @@ public class Crush {
             for(int r = 1; r <= n; r++){//найти n реплик
                 int fr = 0;//количество "падений" в этой реплике
                 Object o = null;
-                boolean retryDescent = false;
-                while(!retryDescent){//если устройство вышло из строя или перегружено и нужно перераспределить элементы по кластеру хранения
-                    ArrayList b = new ArrayList<>(i);
-                    boolean retryBucket = false;
-                    while(!retryBucket){//для случая коллизии чтобы провести локальный поиск
-                        //rNew для следующих случаев: 1)элемент уже выбран(коллизия) 2)сегмент перегружен 3) сегмент вышел из строя
-                        int rNew = r + fr * n;
-                        o = c(b, rNew, x);//выбираем сегмент из b
-                        //в данном случае сюда никогда не попадем
-                        if (!(o instanceof OSD)){//если не тот тип сегманта который мы ищем
-                            //b = new ArrayList<>(o);
-                            retryBucket = true;//кажется что тут ошибка
-                        }
-                        else{
-                            if (O.contains(o) || ((OSD) o).isFailed() || ((OSD) o).isOverload()){//isOverload должен ещё отправлятьяс блок
-                                fr++;
-                            }
-                            if (O.contains(o) && fr < 3){
-                                retryBucket = true;//кажется что тут ошибка
-                            }
-                            else{
-                                retryBucket = true;//в псевдокоде этого нет но мне кажется что нужно
-                                retryDescent = true;
-                            }
-                        }
+                ArrayList b = new ArrayList<>(i);
+                boolean retryBucket = false;
+                while(!retryBucket){//для случая коллизии чтобы провести локальный поиск
+                    //rNew для следующих случаев: 1)элемент уже выбран(коллизия) 2)сегмент перегружен 3) сегмент вышел из строя
+                    int rNew = r + fr * n;
+                    o = c(b, rNew, x);//выбираем сегмент из b
+                    if (O.contains(o)){//проверка на коллизию
+                        fr++;
+                    }
+                    else {
+                        retryBucket = true;
                     }
                 }
                O.add(o);

@@ -1,27 +1,28 @@
 package ulyana;
 
-public class Block {
-    private String ID;//нужно переделать в тот тип, чтобы название характеризовалось номером inode и номером строки
-    private String path;
-    private int begin;
-    private int end;
+public class Block{
+    final private String ID;//состоит из inode number и номера блока
+    final private String path;
+    //нужны номера строк или номера символов
+    private int begin;//номер символа с которого начинается
+    private byte[] data;
 
-    public Block(String ID, String path, int begin, int end){
+    public Block(String ID, String path, int begin, byte[] data){
         this.ID = ID;
         this.path = path;
         this.begin = begin;
-        this.end = end;
+        this.data = data;
     }
 
     public String getName(){
         return ID;
     }
 
+    public byte[] getData(){
+        return data;
+    }
+
     public String toString(){
-        StringBuilder data = new StringBuilder();
-        data.append("{ID: " + ID + " ");
-        data.append("path: " + path + "\n");
-        data.append("beign: " + begin + " end: " + end + "}");
-        return data.toString();
+        return "{ID: ".concat(ID).concat(" ").concat("path: ").concat(path).concat(" ").concat("begin: ") + begin + "}";
     }
 }
