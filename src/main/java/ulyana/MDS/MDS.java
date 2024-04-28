@@ -1,17 +1,14 @@
-package ulyana;
+package ulyana.MDS;
 
-import java.io.*;
 import java.util.ArrayList;
 
 //сервер метаданных, в нем хранится файловая система
 //для работы с cephfs надо всегда добавлять приставку /ceph/
 public class MDS{
     static private int ID = 1;
-    final private ArrayList<Block> blocks;
     final private InodeDirectory root;//корневой каталог
     private InodeDirectory curInode;//директория в которой мы сейчас находимся
     final private String ROOT = "ceph";//путь к любому файлу начинается /ROOT
-    final int sizeBlock = 4096;//размер блока для разделения файла
 
     //вспомагательный класс для функций
     class Pair{
@@ -27,7 +24,6 @@ public class MDS{
     public MDS(){
         root = new InodeDirectory(ROOT, "", ID++);
         curInode = root;
-        blocks = new ArrayList<Block>();
     }
 
     //добавить файл
@@ -54,82 +50,55 @@ public class MDS{
         pair.inode.addInode(new InodeDirectory(pair.name, pair.inode.getPath(), ID++));
     }
 
-    //копирование файла внутри файловой системы
-    public void copyInodeFS(String nameInodeSource, String nameInodeDestination) throws Exception {
-        //ищем директорию источника
-        Pair pairSource = findDirectory(nameInodeSource);
-        if(pairSource.name == null) throw new Exception("you can't copy file without name");
-        //ищем файл источник
-        InodeFile inodeSource = pairSource.inode.searchFile(pairSource.name);
-        if(inodeSource == null) throw new Exception("such file doesn't exist: ".concat(nameInodeSource));
-        InodeFile inodeDestination = addInodeFile(nameInodeDestination);
-        inodeDestination.setSize(inodeSource.size());
-        inodeDestination.setCountBlock(inodeSource.getCountBlock());
-        int IDSource = inodeSource.getID();//узнаем номер inode, который нужно скопировать
-        int IDDestination = inodeDestination.getID();//узнаем номер inode, в который нужно скопировать
-        for(int i = 0; i < inodeSource.getCountBlock(); i++){//собираем все блоки
-            int numBlock = searchBlock(IDSource + "." + i);
-            Block block = new Block(IDDestination + "." + i, inodeDestination.getPath(), i * sizeBlock, blocks.get(numBlock).getData());
-            blocks.add(block);
-        }
+    //удаление файла
+    //возвращает номер inode
+    public InodeFile removeFile(String nameInode) throws Exception{
+        //ищем директорию
+        Pair pair = findDirectory(nameInode);
+        if (pair.name == null) throw new Exception("you can't copy file without name");
+        //ищем файл
+        InodeFile inode = find(nameInode);
+        if (inode == null) throw new Exception("such file doesn't exist: ".concat(nameInode));
+        //удлалить блоки и inode
+        //должны вернуть номер inode и клиент удалит из OSD
+        int inodeID = inode.getID();
+        pair.inode.delete(inodeID);//в директории удаляем inode
+        return inode;
     }
 
-    //копирование файла из ceph в локальный компьютер
-    public void copyInodeFromFS(String nameInode, File directory, String nameFileCopy) throws Exception {//откуда и куда копируем
+    //удалить каталог
+    public ArrayList<InodeFile> removeDirectory(String nameInode) throws Exception {
+        ArrayList<InodeFile> inodeID = new ArrayList<InodeFile>();
+        Pair pair = findDirectory(nameInode);
+        if (pair.name == null) throw new Exception("you can't copy file without name");
+        InodeDirectory inode = pair.inode.searchDirectory(pair.name);
+        if (inode == null) throw new Exception("such directory doesn't exist: ".concat(nameInode));
+        remove(inode, inodeID);
+        int curInodeID = inode.getID();
+        pair.inode.delete(curInodeID);
+        return inodeID;
+    }
+
+    //чтобы пройти по иерархии и удалить все нижележащие inode
+    //arraylist нужен чтобы запоминать номера inode файлов, чтобы удалить эти блоки с диска
+    private void remove(InodeDirectory inode, ArrayList<InodeFile> inodeID){
+        if (curInode.getID() == inode.getID()) curInode = root;
+        for(int i = 0; i < inode.size(); i++){
+            if (inode.get(i).getType() == 1) remove((InodeDirectory) inode.get(i), inodeID);
+            else inodeID.add((InodeFile) inode.get(i));
+        }
+        inode.removeAll();
+    }
+
+    //найти файл, те чтобы получить inode
+    public InodeFile find(String nameInode)throws Exception{
         //ищем директорию
         Pair pair = findDirectory(nameInode);
         if (pair.name == null) throw new Exception("you can't copy file without name");
         //ищем файл
         InodeFile inode = pair.inode.searchFile(pair.name);
         if (inode == null) throw new Exception("such file doesn't exist: ".concat(nameInode));
-
-        //открываем файл источник, проверяем существует ли уже файл с таким именем
-        File file = new File(directory, nameFileCopy);
-        if(file.exists()){
-            if(file.isDirectory()){
-                file = new File(file, inode.toString());
-            }
-            else{
-                throw new Exception("file with that name already exists: ".concat(nameFileCopy));
-            }
-        }
-        else{
-            File parent = file.getParentFile();
-            if(!parent.isDirectory()) throw new Exception("such path doesn't exist: ".concat(nameFileCopy));
-        }
-        if (!file.isFile()) throw new Exception("error name file: ".concat(nameFileCopy));
-
-        int ID = inode.getID();//узнаем номер inode, который нужно скопировать
-        FileOutputStream fileBytes = new FileOutputStream(file);
-        for (int i = 0; i < inode.getCountBlock(); i++) {//собираем все блоки
-            int numBlock = searchBlock(ID + "." + i);
-            fileBytes.write(blocks.get(numBlock).getData());
-        }
-        fileBytes.close();
-    }
-
-    //копирование из локального компьютера в ceph
-    public void copyInodeToFS(File directory, String nameFileCopy, String nameInode) throws Exception {//откуда копируем и куда
-        //открываем файл источник, проверяем существует ли такой файл
-        File file = new File(directory, nameFileCopy);
-        if (!file.exists()) throw new Exception("such file doesn't exist: ".concat(nameFileCopy));
-        InodeFile inode = addInodeFile(nameInode);
-        FileInputStream fileBytes = new FileInputStream(file);
-        int size = fileBytes.available();//узнаем размер файла
-        int countBlock = (size / sizeBlock) + 1;//вычисляем количество блоков, которые понадобятся для сохранения файла
-        int inodeID = inode.getID();//узнаем ID файла, тк имя блока состоит из номера inode и (сейчас - номера блока)
-        int countRead = sizeBlock;//сколько байт считать в блок
-        inode.setSize(size);
-        inode.setCountBlock(countBlock);
-        //делим файл на блоки
-        for (int j = 0; j < countBlock; j++) {
-            if (fileBytes.available() < countRead) countRead = fileBytes.available();
-            byte[] data = new byte[countRead];
-            fileBytes.read(data);
-            Block block = new Block(inodeID + "." + j, inode.getPath(), j * sizeBlock, data);
-            blocks.add(block);
-        }
-        fileBytes.close();
+        return inode;
     }
 
     //ходим только по директориям
@@ -197,11 +166,4 @@ public class MDS{
         return new Pair(words[words.length - 1], inode);
     }
 
-    //поиск блока в MDS
-    public int searchBlock(String ID){
-        for(int i = 0; i < blocks.size(); i++){
-            if(blocks.get(i).getName().equals(ID)) return i;
-        }
-        return -1;
-    }
 }

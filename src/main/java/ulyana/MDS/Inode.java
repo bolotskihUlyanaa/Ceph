@@ -1,4 +1,4 @@
-package ulyana;
+package ulyana.MDS;
 
 public abstract class Inode{
     //пока что только неизменяемые поля

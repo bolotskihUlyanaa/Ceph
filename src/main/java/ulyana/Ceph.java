@@ -1,7 +1,8 @@
 package ulyana;
 
 import java.util.*;
-
+import ulyana.Client.*;
+import ulyana.OSD.*;
 public class Ceph {
     private ArrayList map;
     Crush crush;
@@ -16,8 +17,11 @@ public class Ceph {
         for(OSD o:osds) o.put(block);
     }
 
+    /*
     public Block get(Block block){
         List<OSD> osds = crush.CRUSH(block.getName(), map);
         return osds.get(0).get();
     }
+
+     */
 }

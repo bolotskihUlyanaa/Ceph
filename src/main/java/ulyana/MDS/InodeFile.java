@@ -1,4 +1,4 @@
-package ulyana;
+package ulyana.MDS;
 
 public class InodeFile extends Inode{
     private int countBlock;//количество блоков

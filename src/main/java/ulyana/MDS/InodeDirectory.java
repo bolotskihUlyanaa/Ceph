@@ -1,4 +1,4 @@
-package ulyana;
+package ulyana.MDS;
 
 import java.util.ArrayList;
 
@@ -31,5 +31,20 @@ public class InodeDirectory extends Inode{
     public InodeFile searchFile(String nameDirectory){
         for(Inode i:nodes) if (i.toString().equals(nameDirectory) && i.getType() == 0) return (InodeFile)i;
         return null;
+    }
+
+    public void delete(int id){
+        int i = 0;
+        for(; i < nodes.size(); i++){
+            if (nodes.get(i).getID() == id){
+                nodes.remove(i);
+                break;
+            }
+        }
+    }
+
+    //чтобы удалить потомков
+    public void removeAll(){
+        nodes.clear();
     }
 }

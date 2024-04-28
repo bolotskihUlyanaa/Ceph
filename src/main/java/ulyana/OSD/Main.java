@@ -1,10 +1,26 @@
-package ulyana;
+package ulyana.OSD;
 
-import java.util.ArrayList;
+import ulyana.Client.Client;
 
 public class Main {
     public static void main(String []args)  {
         try {
+
+            /*
+            ulyana.OSD.DiskStorage disk = new DiskStorage("res/OSD.txt");
+            byte[] mas = new byte[20];
+            for(int i = 0; i < 20; i++){
+                mas[i] = (byte) i;
+            }
+            Block a = new Block("6666666", "/123456", 0, mas);
+            Block b = new Block("777", "/1234567", 22, mas);
+            //disk.save(a);
+            //disk.save(b);
+            System.out.println(disk.load());
+            System.out.println(disk.get("6666666"));
+
+             */
+
 /*
         //CRUSH
         //создаем блок

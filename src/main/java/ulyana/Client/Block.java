@@ -1,6 +1,10 @@
-package ulyana;
+package ulyana.Client;
 
-public class Block{
+import java.io.Serializable;
+
+//объект долден быть сериализуемым чтобы сохранять в файл
+public class Block implements Serializable {
+    private static final long SerialVersionUID = 1998;
     final private String ID;//состоит из inode number и номера блока
     final private String path;
     //нужны номера строк или номера символов
