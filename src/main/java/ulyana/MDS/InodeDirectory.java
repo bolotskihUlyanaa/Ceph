@@ -1,9 +1,11 @@
 package ulyana.MDS;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class InodeDirectory extends Inode{
-    private ArrayList<Inode> nodes;//ссылки на нижние узлы
+//inode типа директория
+public class InodeDirectory extends Inode implements Serializable {
+    final private ArrayList<Inode> nodes;//ссылки на нижние узлы
 
     public InodeDirectory(String nameInode, String path, int numberInode) {
         name = nameInode;
@@ -13,26 +15,31 @@ public class InodeDirectory extends Inode{
         type = 1;
     }
 
+    //добавить потомка
     public void addInode(Inode inode){
         nodes.add(inode);
     }
 
+    //количество потомков
     public int size(){
         return nodes.size();
     }
 
     public Inode get(int i){return nodes.get(i);}
 
+    //найти директорию
     public InodeDirectory searchDirectory(String nameDirectory){
         for(Inode i:nodes) if (i.toString().equals(nameDirectory) && i.getType() == 1) return (InodeDirectory)i;
         return null;
     }
 
+    //найти файл
     public InodeFile searchFile(String nameDirectory){
         for(Inode i:nodes) if (i.toString().equals(nameDirectory) && i.getType() == 0) return (InodeFile)i;
         return null;
     }
 
+    //удалить потомка по id
     public void delete(int id){
         int i = 0;
         for(; i < nodes.size(); i++){
@@ -43,8 +50,13 @@ public class InodeDirectory extends Inode{
         }
     }
 
-    //чтобы удалить потомков
+    //удалить всех потомков
     public void removeAll(){
         nodes.clear();
+    }
+
+    //получить всех потомков
+    public ArrayList<Inode> getNodes(){
+        return nodes;
     }
 }

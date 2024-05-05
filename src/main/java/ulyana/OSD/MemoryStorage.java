@@ -3,17 +3,17 @@ package ulyana.OSD;
 import ulyana.Client.Block;
 import java.util.ArrayList;
 
-//может быть использовать хэшмэп?
+//хранение в оперативной памяти
 public class MemoryStorage implements Storage{
-    private ArrayList<Block> blocks;
+    final private ArrayList<Block> blocks;//массив хранимых блоков
 
     public MemoryStorage(){
         blocks = new ArrayList<Block>();
     }
 
     //сохранить блок
-    public void save(Block block){
-        blocks.add(block);
+    public boolean save(Block block){
+        return blocks.add(block);
     }
 
     //найти блок по ID
@@ -24,10 +24,13 @@ public class MemoryStorage implements Storage{
     }
 
     //удаление блока
-    public void remove(String blockID){
+    public boolean remove(String blockID) {
         int i = 0;
-        for(; i < blocks.size(); i++)
-            if(blocks.get(i).getName().equals(blockID)) break;
+        for (; i < blocks.size(); i++)
+            if (blocks.get(i).getName().equals(blockID)) break;
+        //если такого блока не нашлось
+        if (i == blocks.size()) return false;
         blocks.remove(i);
+        return true;
     }
 }

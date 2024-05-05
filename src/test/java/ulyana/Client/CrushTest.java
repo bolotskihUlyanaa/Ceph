@@ -1,39 +1,57 @@
 package ulyana.Client;
 
 import org.junit.Test;
-import ulyana.OSD.MemoryStorage;
-import ulyana.OSD.OSD;
+import ulyana.Monitor.*;
+import java.net.*;
 import java.util.ArrayList;
 import static org.junit.Assert.assertEquals;
 
 public class CrushTest {
-
     @Test
     public void select(){
-        //Создаем карту из 100 компьютеров
-        ArrayList<OSD> map = new ArrayList<OSD>();
-        for(int i = 0; i < 100; i++){
-            map.add(new OSD("192.168.0." + i, 8000 + i, new MemoryStorage()));
+        try {
+            //создадим карту из одного компьютера и проверим что выберем этот компьютер
+            ArrayList<Bucket> map = new ArrayList<Bucket>();
+            map.add(new DiskBucket(InetAddress.getLocalHost(), 10000));
+            Crush crush = new Crush();
+            crush.setMap(map);
+            crush.select("123.3", 1, "OSD");
+            ArrayList<ArrayList<Bucket>> result = crush.get();
+            assertEquals(map, result.get(0));
+
+            //проверка на иерархической структуре
+            //создаем карту из двух row, в одном row один диск
+            Bucket clusterMap = new Bucket("root", "root");
+            Bucket row1 = new Bucket("row", "row1");
+            Bucket row2 = new Bucket("row", "row2");
+            clusterMap.add(row1);
+            clusterMap.add(row2);
+            DiskBucket disk1001 = new DiskBucket(InetAddress.getByName("localhost"), 1001);
+            DiskBucket disk1002 = new DiskBucket(InetAddress.getByName("localhost"), 1002);
+            clusterMap.find("row1").add(disk1001);
+            clusterMap.find("row2").add(disk1002);
+            crush = new Crush();//создаем новый объект так как карта меняется, а метод setMap не заново задает карту
+            crush.setMap(clusterMap.getMap());
+            //выбираем 2 сегмента типа row
+            crush.select("123.1", 2, "row");
+            result = crush.get();
+            ArrayList<Bucket> expected = new ArrayList<>();
+            expected.add(row1);
+            expected.add(row2);
+            assertEquals(expected, result.get(0));
+            //выбираем в каждом row один диск
+            crush = new Crush();
+            crush.setMap(result.get(0).get(0).getMap());
+            crush.setMap(result.get(0).get(1).getMap());
+            crush.select("123.1", 1, "OSD");
+            result = crush.get();
+            expected = new ArrayList<>();
+            expected.add(disk1001);
+            expected.add(disk1002);
+            assertEquals(expected, result.get(0));
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
         }
-        //вычисляем самостоятельно OSD
-        int n = 3;
-        String block = "123.1";
-        int p = 101;
-        int hash = block.hashCode();
-        int[] osds = new int[n];
-        for(int i = 1; i <= n; i++){
-            osds[i - 1] = (hash + i * p) % map.size();
-        }
-        ArrayList<OSD> expected = new ArrayList<OSD>();
-        for(int i = 0; i < n; i++){
-            expected.add(map.get(osds[i]));
-        }
-        //вычисляем самостоятельно OSD
-        Crush crush = new Crush();
-        crush.setMap(map);
-        crush.select(block, n, "OSD");
-        ArrayList<ArrayList<Bucket>> a = crush.get();
-        assertEquals(expected, a.get(0));
     }
 
     @Test

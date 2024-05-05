@@ -2,10 +2,12 @@ package ulyana.OSD;
 
 import ulyana.Client.Block;
 
+//интерфейс определяющий хранение в постоянной или оперативной памяти
 interface Storage{
-    void save(Block block);
+
+    boolean save(Block block);
 
     Block get(String blockID);
 
-    void remove(String blockID);
+    boolean remove(String blockID);
 }

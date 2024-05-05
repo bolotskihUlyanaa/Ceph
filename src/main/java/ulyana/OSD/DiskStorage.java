@@ -4,12 +4,22 @@ import ulyana.Client.Block;
 import java.io.*;
 import java.util.ArrayList;
 
+//для хранения блоков в постоянной памяти компьютера
 public class DiskStorage implements Storage {
-    final private String path;
+    final private String path;//путь до файла в постоянной памяти компьютера
 
     public DiskStorage(String path) {
-        File file = new File(path);
         try {
+            String[] directoires = path.split("/");
+            for (int j = 0; j <= directoires.length - 1; j++) {
+                StringBuilder directory = new StringBuilder();
+                for (int i = 0; i < j; i++) {
+                    directory.append(directoires[i] + "/");
+                }
+                File f = new File(directory.toString());
+                if (!f.isDirectory()) f.mkdirs();
+            }
+            File file = new File(path);
             file.createNewFile();//если такого файла не существует, создадим его
         }
         catch(Exception ex){
@@ -18,63 +28,82 @@ public class DiskStorage implements Storage {
         this.path = path;
     }
 
-    //сохранить в файл
-    public void save(Block block) {
-        ArrayList<Block> blocks = load();
-        blocks.add(block);
-        saveToFile(blocks);
-    }
-
-    //сериализация
-    public void saveToFile(ArrayList<Block> blocks) {
+    //сохранить блок
+    public boolean save(Block block) {
         try {
-            FileOutputStream a = new FileOutputStream(path);
-            ObjectOutputStream out = new ObjectOutputStream(a);
-            for (Block i : blocks) out.writeObject(i);
-            out.close();
-            a.close();
+            ArrayList<Block> blocks = load();//загружаем все блоки из файла
+            blocks.add(block);//добавляем к полученным из файла блокам, блок который прислали для сохранения
+            saveToFile(blocks);//сохранить все обратно в файл
+            return true;
+        }
+        catch(IOException ex){
+            System.out.println(ex.getMessage());
+            return false;
         }
         catch(Exception ex){
-            System.out.println(ex.getMessage());
+            return false;
         }
     }
 
-    //десериализация
-    public ArrayList<Block> load() {
+    //сохранить блоки в файл, сериализация
+    public void saveToFile(ArrayList<Block> blocks) throws Exception {
+        FileOutputStream outStream = new FileOutputStream(path);
+        ObjectOutputStream out = new ObjectOutputStream(outStream);
+        for (Block i : blocks) out.writeObject(i);
+        out.close();
+        outStream.close();
+    }
+
+    //прочитать блоки из файла, десериализация
+    public ArrayList<Block> load() throws Exception {
         ArrayList<Block> array = new ArrayList<Block>();
-        try {
-            FileInputStream a = new FileInputStream(path);
-            if(a.available() > 0) {
-                ObjectInputStream in = new ObjectInputStream(a);
-                while (a.available() > 0) {
-                    Block block = (Block) in.readObject();
-                    array.add(block);
-                }
-                in.close();
+        FileInputStream inStream = new FileInputStream(path);
+        //файл может быть пустой потому что в нем ещё не хранят блоки или стерли данные,
+        //чтобы не выдавало ошибку нужна эта проверка
+        if (inStream.available() > 0) {
+            ObjectInputStream in = new ObjectInputStream(inStream);
+            while (inStream.available() > 0) {
+                Block block = (Block) in.readObject();
+                array.add(block);
             }
-            a.close();
+            in.close();
         }
-        catch(Exception ex){
-            System.out.println(ex.getMessage());
-        }
+        inStream.close();
         return array;
     }
 
-    //найти блок в OSD
+    //найти блок в OSD по id
     public Block get(String blockId) {
-        ArrayList<Block> blocks = load();
-        for(Block i:blocks) //ищем блок по ID
-            if (i.getName().equals(blockId)) return i;
+        try {
+            ArrayList<Block> blocks = load();
+            for (Block i : blocks) { //ищем блок по ID
+                if (i.getName().equals(blockId)) return i;
+            }
+        }
+        catch(Exception ex){
+            System.out.println(ex.getMessage());
+        }
         return null;
     }
 
     //удаление блока
-    public void remove(String blockID){
-        ArrayList<Block> blocks = load();
-        int i = 0;
-        for(; i < blocks.size(); i++)
-            if(blocks.get(i).getName().equals(blockID)) break;
-        blocks.remove(i);
-        saveToFile(blocks);
+    public boolean remove(String blockID){
+        try {
+            ArrayList<Block> blocks = load();
+            int i = 0;
+            //ищем блок по id
+            for (; i < blocks.size(); i++)
+                if (blocks.get(i).getName().equals(blockID)) break;
+            //если такого блока не нашлось
+            if(i == blocks.size()) return false;
+            blocks.remove(i);
+            saveToFile(blocks);
+            return true;
+        }catch(IOException ex) {
+            System.out.println(ex.getMessage());
+            return false;
+        } catch(Exception ex){
+            return false;
+        }
     }
 }

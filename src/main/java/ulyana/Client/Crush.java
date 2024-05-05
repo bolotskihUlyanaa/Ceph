@@ -1,7 +1,10 @@
 package ulyana.Client;
 
+import ulyana.Monitor.Bucket;
 import java.util.ArrayList;
 
+//алгоритм вычисления расположения блока
+//для этого нужны идентификатор объекта и карта кластера
 public class Crush {
     private ArrayList<ArrayList<Bucket>> list;
 
@@ -9,25 +12,34 @@ public class Crush {
         list = new ArrayList<>();
     }
 
-    //placement rules
-    //алгоритм вычисления расположения объекта для этого нужны идентификатор объекта и карта кластера
+    //placement rules можон установить любые
     public ArrayList CRUSH(String x, ArrayList<Bucket> map){
         list = new ArrayList<ArrayList<Bucket>>();
         list.add(map);//поместить сегмент map в список list
-        select(x, 1, "OSD");//если случай не с OSD, то надо брать ArrayList у каждого элемента
+        /* //пример с многоуровневневой иерархией
+        select(x, 2, "row");
+        ArrayList<ArrayList<Bucket>> listNew = new ArrayList<>();
+        for(int i = 0; i < list.get(0).size(); i++){
+            listNew.add(list.get(0).get(i).getMap());
+        }
+        list = listNew;
+         */
+        select(x, 1, "OSD");
         return list.get(0);
     }
 
-    public void select(String x, int n, String t){//t это тип
+    //x - название блока, n - количество сегментов, t - тип сегмента
+    public void select(String x, int n, String t){
         ArrayList<Bucket> O = new ArrayList<Bucket>();
         for(ArrayList<Bucket> i:list) {
             for(int r = 1; r <= n; r++){//найти n реплик
                 int fr = 0;//количество "падений" в этой реплике
                 Bucket o = null;
-                ArrayList b = new ArrayList<>(i);
+                ArrayList<Bucket> b = new ArrayList<>(i);
                 boolean retryBucket = false;
                 while(!retryBucket){//для случая коллизии чтобы провести локальный поиск
                     //rNew для следующих случаев: 1)элемент уже выбран(коллизия) 2)сегмент перегружен 3) сегмент вышел из строя
+                    //пока что есть только проверка на коллизию
                     int rNew = r + fr * n;
                     o = c(b, rNew, x);//выбираем сегмент из b
                     if (O.contains(o) && o.getClass().getSimpleName().equals(t)){//проверка на коллизию и на тип
@@ -71,7 +83,7 @@ public class Crush {
         return list;
     }
 
-    public void setMap(ArrayList map){
+    public void setMap(ArrayList<Bucket> map){
         list.add(map);
     }
 }

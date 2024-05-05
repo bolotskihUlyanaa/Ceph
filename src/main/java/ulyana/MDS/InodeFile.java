@@ -1,6 +1,9 @@
 package ulyana.MDS;
 
-public class InodeFile extends Inode{
+import java.io.Serializable;
+
+//inode типа файл
+public class InodeFile extends Inode implements Serializable {
     private int countBlock;//количество блоков
 
     public InodeFile(String nameInode, String path, int numberInode, int size, int countBlock) {
@@ -9,16 +12,6 @@ public class InodeFile extends Inode{
         number = numberInode;
         this.size = size;
         this.countBlock = countBlock;
-        type = 0;
-    }
-
-    //создать пустой файл
-    public InodeFile(String nameInode, String path, int numberInode){
-        name = nameInode;
-        layout = path;
-        number = numberInode;
-        size = 0;
-        countBlock = 0;
         type = 0;
     }
 

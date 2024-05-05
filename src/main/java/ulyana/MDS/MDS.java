@@ -1,11 +1,11 @@
 package ulyana.MDS;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 //сервер метаданных, в нем хранится файловая система
-//для работы с cephfs надо всегда добавлять приставку /ceph/
-public class MDS{
-    static private int ID = 1;
+public class MDS implements Serializable{
+    private int ID = 1;
     final private InodeDirectory root;//корневой каталог
     private InodeDirectory curInode;//директория в которой мы сейчас находимся
     final private String ROOT = "ceph";//путь к любому файлу начинается /ROOT
@@ -19,6 +19,11 @@ public class MDS{
             this.name = name;
             inode = directory;
         }
+
+        public String toString(){
+            if(name == null) return "null ".concat(inode.toString());
+            else return name.concat(" ").concat(inode.toString());
+        }
     }
 
     public MDS(){
@@ -27,114 +32,152 @@ public class MDS{
     }
 
     //добавить файл
-    public InodeFile addInodeFile(String nameInode) throws Exception {
-        Pair pair = findDirectory(nameInode);
-        if(pair.name == null) throw new Exception("you can't create file without name");
-        //проверка не существует ли уже файл с таким названием
-        if(pair.inode.searchFile(pair.name) != null) {
-            throw new Exception("such file already exist: ".concat(nameInode));
+    //вернулась строка - это причина почему файл нельзя создать
+    //вернулось число - номер inode который создали
+    //почему возвращаем id? чтобы потом сохранить блоки а для этого нужен ID
+    public Object addInodeFile(String nameInode, int size, int countBlock) {
+        try {
+            Pair pair = findDirectory(nameInode);//ищем директорию в которую нужно добавить файл
+            if (pair.name == null) throw new Exception("you can't create file without name");
+            //проверка не существует ли уже файл с таким названием
+            if (pair.inode.searchFile(pair.name) != null) {//ищем файл в директории
+                throw new Exception("such file already exist: ".concat(nameInode));
+            }
+            //создаем новый inode-файл
+            InodeFile inode = new InodeFile(pair.name, pair.inode.getPath(), ID++, size, countBlock);
+            pair.inode.addInode(inode);//сохраняем новый inode в директорию
+            return inode.getID();
+        } catch(Exception ex){
+            return ex.getMessage();
         }
-        InodeFile inode = new InodeFile(pair.name, pair.inode.getPath(), ID++);
-        pair.inode.addInode(inode);
-        return inode;
     }
 
     //добавить подкаталог
-    public void addInodeDirectory(String nameInode) throws Exception {
-        Pair pair = findDirectory(nameInode);
-        if(pair.name == null) throw new Exception("you can't create directory without name");
-        //проверка не существует ли уже папка с таким названием в данном каталоге
-        if(pair.inode.searchDirectory(pair.name) != null) {
-            throw new Exception("such directory already exist: ".concat(nameInode));
+    //вернулась строка - это причина почему подкаталог нельзя создать
+    //вернулось число - номер inode который создали
+
+    public Object addInodeDirectory(String nameInode) {
+        try {
+            Pair pair = findDirectory(nameInode);//ищем директорию в которую нужно добавить директорию
+            if (pair.name == null) throw new Exception("you can't create directory without name");
+            //проверка не существует ли уже каталог с таким названием в данном каталоге
+            if (pair.inode.searchDirectory(pair.name) != null) {//ищем директорию в директории
+                throw new Exception("such directory already exist: ".concat(nameInode));
+            }
+            //создаем новую inode-директорию и добавляем ее в директорию
+            InodeDirectory inode = new InodeDirectory(pair.name, pair.inode.getPath(), ID++);
+            pair.inode.addInode(inode);
+            return inode.getID();
+        } catch(Exception ex){
+            return ex.getMessage();
         }
-        pair.inode.addInode(new InodeDirectory(pair.name, pair.inode.getPath(), ID++));
     }
 
     //удаление файла
-    //возвращает номер inode
-    public InodeFile removeFile(String nameInode) throws Exception{
-        //ищем директорию
-        Pair pair = findDirectory(nameInode);
-        if (pair.name == null) throw new Exception("you can't copy file without name");
-        //ищем файл
-        InodeFile inode = find(nameInode);
-        if (inode == null) throw new Exception("such file doesn't exist: ".concat(nameInode));
-        //удлалить блоки и inode
-        //должны вернуть номер inode и клиент удалит из OSD
-        int inodeID = inode.getID();
-        pair.inode.delete(inodeID);//в директории удаляем inode
-        return inode;
+    //возвращает inode если такой файл найден и удален, иначе null
+    public InodeFile removeFile(String nameInode){
+        try {
+            Pair pair = findDirectory(nameInode);//ищем директорию в которой нужно удалить файл
+            if (pair.name == null) throw new Exception("such directory doesn't exist");//каталог не найден
+            InodeFile inode = pair.inode.searchFile(pair.name);//ищем файл в директории
+            if (inode == null) throw new Exception("such file doesn't exist");//файл не найден
+            int inodeID = inode.getID();
+            pair.inode.delete(inodeID);//в директории удаляем inode
+            return inode;
+        } catch(Exception ex){
+            return null;
+        }
     }
 
     //удалить каталог
-    public ArrayList<InodeFile> removeDirectory(String nameInode) throws Exception {
-        ArrayList<InodeFile> inodeID = new ArrayList<InodeFile>();
-        Pair pair = findDirectory(nameInode);
-        if (pair.name == null) throw new Exception("you can't copy file without name");
-        InodeDirectory inode = pair.inode.searchDirectory(pair.name);
-        if (inode == null) throw new Exception("such directory doesn't exist: ".concat(nameInode));
-        remove(inode, inodeID);
-        int curInodeID = inode.getID();
-        pair.inode.delete(curInodeID);
-        return inodeID;
-    }
-
-    //чтобы пройти по иерархии и удалить все нижележащие inode
-    //arraylist нужен чтобы запоминать номера inode файлов, чтобы удалить эти блоки с диска
-    private void remove(InodeDirectory inode, ArrayList<InodeFile> inodeID){
-        if (curInode.getID() == inode.getID()) curInode = root;
-        for(int i = 0; i < inode.size(); i++){
-            if (inode.get(i).getType() == 1) remove((InodeDirectory) inode.get(i), inodeID);
-            else inodeID.add((InodeFile) inode.get(i));
+    //возвращает список inode которые удалили
+    //произошла ошибка - вернется null
+    public ArrayList<InodeFile> removeDirectory(String nameInode) {
+        try {
+            ArrayList<InodeFile> inodes = new ArrayList<InodeFile>();
+            Pair pair = findDirectory(nameInode);//ищем директорию в которой нужно удалить директорию
+            if (pair.name == null) throw new Exception("such directory doesn't exist");//директория не найдена
+            InodeDirectory inode = pair.inode.searchDirectory(pair.name);//ищем директорию в директории
+            if (inode == null) throw new Exception("such directory doesn't exist");//директория не найдена
+            remove(inode, inodes);//удалить всех потомков
+            int curInodeID = inode.getID();//взять id директории которую нужно удалить
+            pair.inode.delete(curInodeID);//удалить из родительской директории
+            return inodes;
+        }catch(Exception ex){
+            return null;
         }
-        inode.removeAll();
     }
 
-    //найти файл, те чтобы получить inode
-    public InodeFile find(String nameInode)throws Exception{
-        //ищем директорию
-        Pair pair = findDirectory(nameInode);
-        if (pair.name == null) throw new Exception("you can't copy file without name");
-        //ищем файл
-        InodeFile inode = pair.inode.searchFile(pair.name);
-        if (inode == null) throw new Exception("such file doesn't exist: ".concat(nameInode));
-        return inode;
+    //рекурсивное удаление директории
+    //пройти по иерархии и удалить все нижележащие inode
+    //arraylist нужен чтобы запоминать inode файлов, чтобы удалить эти блоки с диска
+    private void remove(InodeDirectory inode, ArrayList<InodeFile> inodes){//inode хотим удалить
+        if (curInode.getID() == inode.getID()) curInode = root;//если нужно удалить директорию в которой сейчас находимся
+        for(int i = 0; i < inode.size(); i++){//пройти по всем потомкам
+            if (inode.get(i).getType() == 1) remove((InodeDirectory) inode.get(i), inodes);//если потомок - директория, то вызвать директорию
+            else inodes.add((InodeFile) inode.get(i));//если потомок файл - сохранить его inode
+        }
+        inode.removeAll();//удалить всех потомков
     }
 
+    //найти файл, т.е. получить inode
+    //если inode найден возвращает его, иначе null
+    public InodeFile find(String nameInode){
+        try {
+            Pair pair = findDirectory(nameInode);//ищем директорию
+            if (pair.name == null) throw new Exception("you can't find a file without a name");//директория не найдена
+            InodeFile inode = pair.inode.searchFile(pair.name);//ищем файл в директории
+            if (inode == null) throw new Exception("");//файл не найден
+            return inode;
+        }catch(Exception ex){
+            return null;
+        }
+    }
+
+    //перейти в директорию
     //ходим только по директориям
-    public void cd(String nameInode) throws Exception {
-        //перенестись на один уровень выше
-        if(nameInode.equals("..")) {
-            nameInode = curInode.getLayout();//то есть нужно перейти в каталог в котором лежит подкаталог в котором мы сейчас находимся
-        }
-        Pair pair = findDirectory(nameInode);
-        if(pair.name == null) curInode = pair.inode;
-        else {
-            InodeDirectory inode = pair.inode.searchDirectory(pair.name);
-            if (inode == null) {
-                throw new Exception("such directory doesn't exist: ".concat(nameInode));
+    //false если директория не найдена
+    public boolean cd(String nameInode) {
+        try {
+            if (nameInode.equals("..")) {//перенестись на один уровень выше или в директорию родителя
+                nameInode = curInode.getLayout() + '/';//то есть нужно перейти в каталог родителя в котором лежит подкаталог в котором мы сейчас находимся
             }
-            curInode = inode;
+            Pair pair = findDirectory(nameInode);//ищем родителя в котором лежит директории
+            if (pair.name == null) curInode = pair.inode;//если не указали путь то остаемся в той же директории
+            else {
+                InodeDirectory inode = pair.inode.searchDirectory(pair.name);//ищем нужную директорию в каталоге родителя
+                if (inode == null) {//если такой директории не существует
+                    throw new Exception("such directory doesn't exist: ");
+                }
+                curInode = inode;//переместились в нужную директорию
+            }
+            return true;
+        }catch(Exception ex){
+            return false;
         }
     }
 
     //посмотреть какие есть inode в текущем каталоге
-    public String ls(String nameInode) throws Exception{
-        InodeDirectory inode;
-        Pair pair = findDirectory(nameInode);
-        if(pair.name == null) inode = pair.inode;
-        else{
-            inode = pair.inode.searchDirectory(pair.name);
-            if (inode == null) {
-                throw new Exception("such directory doesn't exist: ".concat(nameInode));
+    public String ls(String nameInode){
+        try {
+            InodeDirectory inode;
+            Pair pair = findDirectory(nameInode);//ищем родителя в котором лежит директории
+            if (pair.name == null) inode = pair.inode;//не указали путь и остаемся в той же директории или указали корневой каталог и переходим к корню
+            else {
+                inode = pair.inode.searchDirectory(pair.name);//ищем в родительском каалоге нужную директорию
+                if (inode == null) {
+                    throw new Exception("such directory doesn't exist: ".concat(nameInode));
+                }
             }
+            StringBuilder str = new StringBuilder();
+            for (int i = 0; i < inode.size(); i++) {
+                str.append(inode.get(i));
+                str.append(" ");
+            }
+            return str.toString();
+        }catch(Exception ex) {
+            return ex.getMessage();
         }
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < inode.size(); i++) {
-            str.append(inode.get(i));
-            str.append(" ");
-        }
-        return str.toString();
     }
 
     //узнать путь к текущему каталогу
@@ -142,7 +185,8 @@ public class MDS{
         return curInode.getPath();
     }
 
-    //если такую директорию не нашли возвращает null, иначе возвращает inodeDirectory в котором хотим создать и имя Inode который ходим создать
+    //найти директорию в которой располагается inode, то есть если папка res/src/q мы будем искать res/src !!!!
+    //если такую директорию не нашли возвращает null, иначе возвращает пару Pair: inodeDirectory в котором хотим создать и имя Inode который ходим создать
     public Pair findDirectory(String nameInode) throws Exception {
         InodeDirectory inode = curInode;
         if(nameInode.startsWith("/".concat(ROOT))){//если файл начинается /ROOT, то обрезаем это
@@ -158,12 +202,13 @@ public class MDS{
         //ищем нужную директорию
         String[] words = nameInode.split("/");
         for(int i = 0; i < words.length - 1; i++){
-            inode = inode.searchDirectory(words[i]);
+            inode = inode.searchDirectory(words[i]);//ищем в родителе нужную директорию и переходим в нее
             if(inode == null){
                 throw new Exception("no such directory: ".concat(nameInode));
             }
         }
+        //возвращаем имя файла или каталога на самом нижнем уровне
+        //и директорию в которой должен лежать этот inode
         return new Pair(words[words.length - 1], inode);
     }
-
 }

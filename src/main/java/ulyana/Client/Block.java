@@ -4,16 +4,13 @@ import java.io.Serializable;
 
 //объект долден быть сериализуемым чтобы сохранять в файл
 public class Block implements Serializable {
-    private static final long SerialVersionUID = 1998;
+    private static final long SerialVersionUID = 1998;//для корректной сериализации
     final private String ID;//состоит из inode number и номера блока
-    final private String path;
-    //нужны номера строк или номера символов
-    private int begin;//номер символа с которого начинается
-    private byte[] data;
+    private int begin;//номер символа с которого начинается блок
+    private byte[] data;//данные которые хранятся в блоке
 
-    public Block(String ID, String path, int begin, byte[] data){
+    public Block(String ID, int begin, byte[] data){
         this.ID = ID;
-        this.path = path;
         this.begin = begin;
         this.data = data;
     }
@@ -27,6 +24,6 @@ public class Block implements Serializable {
     }
 
     public String toString(){
-        return "{ID: ".concat(ID).concat(" ").concat("path: ").concat(path).concat(" ").concat("begin: ") + begin + "}";
+        return "{ID: ".concat(ID).concat(" ").concat("path: ").concat(" ").concat("begin: ") + begin + "}";
     }
 }

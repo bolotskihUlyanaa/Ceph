@@ -1,34 +1,39 @@
 package ulyana.OSD;
 
 import ulyana.Client.*;
+import java.net.InetAddress;
 
-public class OSD implements Bucket{
-    final private String IP;
+//object storage device(demon)
+//хранит блоки
+public class OSD{
+    final private InetAddress IP;
     final private int port;
-    private Storage storage;
-    private boolean overload;//флаг не перегружено ли устройство
-    private boolean failed;//флаг работает ли устройство
-//может быть нужен текущий размер OSD
+    final private Storage storage;//тип хранения в оперативной или постоянной памяти
 
-    public OSD(String IP, int port, Storage storage){
+    public OSD(InetAddress IP, int port, Storage storage){
         this.IP = IP;
         this.port = port;
         this.storage = storage;
-        overload = false;
-        failed = false;
     }
 
-    public void put(Block block){storage.save(block);}
+    //положить блок в osd
+    public boolean put(Block block){return storage.save(block);}
 
+    //взять блок из osd
     public Block get(String blockID){return storage.get(blockID);}
 
-    public void remove(String blockID){
-        storage.remove(blockID);
+    //удалить блок в osd
+    public boolean remove(String blockID){
+        return storage.remove(blockID);
     }
 
-    public boolean isFailed() {return failed;}
+    public String toString(){return "{IP: ".concat(IP.getHostAddress()).concat(" port:") + port + "}\n";}
 
-    public boolean isOverload() {return overload;}
+    public InetAddress getIP(){
+        return IP;
+    }
 
-    public String toString(){return "{IP: ".concat(IP).concat(" port:") + port + "}\n";}
+    public int getPort(){
+        return port;
+    }
 }

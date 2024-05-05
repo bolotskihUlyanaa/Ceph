@@ -1,11 +1,14 @@
 package ulyana.MDS;
 
-public abstract class Inode{
+import java.io.Serializable;
+
+//абстрактный класс для inodeFile и inodeDirectory
+public abstract class Inode implements Serializable {
     //пока что только неизменяемые поля
     protected int number;//номер inode
     protected int size;//размер файла
     protected String name;//имя
-    protected String layout;//расположение или путь до папки в которой она лежит
+    protected String layout;//расположение или путь до папки в которой inode лежит
     protected int type;//тип 0 - файл, 1 - директория
 
     public String toString(){
