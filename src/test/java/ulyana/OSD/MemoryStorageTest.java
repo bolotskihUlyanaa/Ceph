@@ -1,15 +1,9 @@
 package ulyana.OSD;
 
-import org.junit.Test;
-import ulyana.Client.Block;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
+import org.junit.jupiter.api.Test;
 import static org.junit.Assert.*;
 
 public class MemoryStorageTest {
-
     @Test
     public void init(){//проверка методов save и remove
         //создаем хранилище из 3х блоков

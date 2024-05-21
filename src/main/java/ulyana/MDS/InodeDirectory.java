@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 //inode типа директория
 public class InodeDirectory extends Inode implements Serializable {
-    final private ArrayList<Inode> nodes;//ссылки на нижние узлы
+    final private ArrayList<Inode> nodes;//ссылки на потомков
 
     public InodeDirectory(String nameInode, String path, int numberInode) {
         name = nameInode;
@@ -16,34 +16,40 @@ public class InodeDirectory extends Inode implements Serializable {
     }
 
     //добавить потомка
-    public void addInode(Inode inode){
+    public void addInode(Inode inode) {
         nodes.add(inode);
     }
 
     //количество потомков
-    public int size(){
+    public int size() {
         return nodes.size();
     }
 
-    public Inode get(int i){return nodes.get(i);}
+    public Inode get(int i) {
+        return nodes.get(i);
+    }
 
-    //найти директорию
-    public InodeDirectory searchDirectory(String nameDirectory){
-        for(Inode i:nodes) if (i.toString().equals(nameDirectory) && i.getType() == 1) return (InodeDirectory)i;
+    public InodeDirectory searchDirectory(String nameDirectory) {
+        for (Inode i:nodes) {
+            if (i.toString().equals(nameDirectory) && i.getType() == 1)
+                return (InodeDirectory) i;
+        }
         return null;
     }
 
-    //найти файл
-    public InodeFile searchFile(String nameDirectory){
-        for(Inode i:nodes) if (i.toString().equals(nameDirectory) && i.getType() == 0) return (InodeFile)i;
+    public InodeFile searchFile(String nameDirectory) {
+        for (Inode i:nodes) {
+            if (i.toString().equals(nameDirectory) && i.getType() == 0)
+                return (InodeFile) i;
+        }
         return null;
     }
 
     //удалить потомка по id
-    public void delete(int id){
+    public void delete(int id) {
         int i = 0;
-        for(; i < nodes.size(); i++){
-            if (nodes.get(i).getID() == id){
+        for (; i < nodes.size(); i++) {
+            if (nodes.get(i).getID() == id) {
                 nodes.remove(i);
                 break;
             }
@@ -51,12 +57,12 @@ public class InodeDirectory extends Inode implements Serializable {
     }
 
     //удалить всех потомков
-    public void removeAll(){
+    public void removeAll() {
         nodes.clear();
     }
 
     //получить всех потомков
-    public ArrayList<Inode> getNodes(){
+    public ArrayList<Inode> getNodes() {
         return nodes;
     }
 }

@@ -1,17 +1,20 @@
 package ulyana.MDS;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
-
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class MDSTest {
+    private MDS mds;
+
+    @BeforeEach
+    public void init(){
+        mds = new MDS();
+    }
 
     @Test
     public void addInodeFile(){//проверка на добавление файла
-        MDS mds = new MDS();
         //проверка на добавление файла без имени
         assertEquals("you can't create file without name", mds.addInodeFile("", 1000, 1));
         //проверка что при добавление первого inode id = 2
@@ -22,7 +25,6 @@ public class MDSTest {
 
     @Test
     public void addInodeDirectory(){//проверка на добавление директории
-        MDS mds = new MDS();
         //проверка на добавление директории без имени
         assertEquals("you can't create directory without name", mds.addInodeDirectory(""));
         //проверка успешного добавления
@@ -33,7 +35,6 @@ public class MDSTest {
 
     @Test
     public void removeFile(){//проверка на удаление файла по имени
-        MDS mds = new MDS();
         mds.addInodeFile("t", 1000, 1);
         assertEquals(2, mds.removeFile("t").getID());//проверяем по id возвращаемого inode
         assertNull(mds.removeFile("t"));//проверка удаления несуществующего файла
@@ -43,21 +44,21 @@ public class MDSTest {
     @Test
     public void removeDirectory(){//проверка на удаление директории по имени
         //удаление директории без потомков
-        MDS mds = new MDS();
         mds.addInodeDirectory("res");
         ArrayList<InodeFile> res = mds.removeDirectory("res");
         assertEquals(0, res.size());//проверяем размер вернувшегося массива удаленных inodeFile
         assertNull(mds.removeDirectory("res"));//проверка удаления несуществующего каталога
         assertEquals("", mds.ls("/"));
+    }
 
-        //удаление директории с потомками
-        mds = new MDS();
+    @Test
+    public void removeDirectoryWithSon(){//удаление директории с потомками
         mds.addInodeDirectory("res");
         mds.addInodeDirectory("res/src");
         mds.addInodeDirectory("res/src/tar");
         mds.addInodeFile("res/src/tar/test", 1000, 1);
         mds.addInodeFile("res/src/tar.txt", 1000, 1);
-        res = mds.removeDirectory("res");
+        ArrayList<InodeFile> res = mds.removeDirectory("res");
         assertEquals(2, res.size());//проверяем количество удаленных inodeFile внутри директории
         assertEquals(5, res.get(0).getID());//проверяем удаленные inodeFile по ID
         assertEquals(6, res.get(1).getID());
@@ -65,7 +66,6 @@ public class MDSTest {
 
     @Test
     public void find(){//проверка поиска файлов
-        MDS mds = new MDS();
         mds.addInodeFile("tar.txt", 1000, 1);//не многоуровневая файловая система
         mds.addInodeDirectory("res");
         mds.addInodeFile("res/src.txt", 1000, 1);
@@ -77,7 +77,6 @@ public class MDSTest {
 
     @Test
     public void cd(){//проверка перехода в другую директорию
-        MDS mds = new MDS();
         mds.addInodeDirectory("res");
         mds.addInodeDirectory("res/src");
         mds.addInodeDirectory("res/src/tar");
@@ -92,7 +91,6 @@ public class MDSTest {
 
     @Test
     public void findDirectory(){//найти директорию в который расположен inode
-        MDS mds = new MDS();
         mds.addInodeDirectory("res");
         mds.addInodeDirectory("res/src");
         try {
@@ -113,5 +111,16 @@ public class MDSTest {
         } catch (Exception e) {
             assertEquals(1, 0);//если попали в обработчик исключений то значит тест не прошли
         }
+    }
+
+    @Test
+    public void ls(){
+        mds.addInodeDirectory("res");
+        mds.addInodeDirectory("res/src");
+        assertEquals("res ", mds.ls(""));
+        assertEquals("src ", mds.ls("res"));
+        assertEquals("res ", mds.ls("/ceph/"));
+        assertEquals("res ", mds.ls("/ceph"));
+        assertEquals("res ", mds.ls("/"));
     }
 }

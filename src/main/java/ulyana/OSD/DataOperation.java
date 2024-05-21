@@ -1,8 +1,8 @@
-package ulyana.Client;
+package ulyana.OSD;
 
 import ulyana.Monitor.DiskBucket;
 
-//интерфейс для операций с блоками
+// для операций с osd
 public interface DataOperation {
 
     boolean put(DiskBucket disk, Block block) throws Exception;
@@ -10,5 +10,4 @@ public interface DataOperation {
     Block get(DiskBucket disk, String blockID) throws Exception;
 
     boolean remove(DiskBucket disk, String blockID) throws Exception;
-
 }

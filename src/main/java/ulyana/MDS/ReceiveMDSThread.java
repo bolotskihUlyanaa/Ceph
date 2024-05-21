@@ -9,18 +9,17 @@ public class ReceiveMDSThread extends Thread {
     final private Socket socket;
     final private MDSDisk mds;
 
-    public ReceiveMDSThread(Socket clientSocket, MDSDisk mds){
+    public ReceiveMDSThread(Socket clientSocket, MDSDisk mds) {
         this.socket = clientSocket;
         this.mds = mds;
     }
 
-    public void run(){
+    public void run() {
         try {
             ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-            Object outObject = null;//объект который вернем
-            String obj = (String) in.readObject();
-            String[] input = obj.split(" ");
-            //в зависимости от команды которая пришла будем обращаться к msd с разным запросом
+            Object outObject = null;
+            String inObject = (String) in.readObject();
+            String[] input = inObject.split(" ");
             switch (input[0]) {
                 case ("addInodeFile"):
                     outObject = mds.addInodeFile(input[1], Integer.parseInt(input[2]), Integer.parseInt(input[3]));
@@ -48,14 +47,13 @@ public class ReceiveMDSThread extends Thread {
                     break;
             }
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            if (!socket.isClosed()) out.writeObject(outObject);
+            out.writeObject(outObject);
             in.close();
             out.close();
-            socket.close();//закрывает in/out putStream
+            socket.close();
         }
         catch (Exception e) {
-            System.out.println(e.getMessage());//может возникнуть когда команду не отправили и определили новый out in socket
+            System.out.println(e.getMessage());
         }
     }
-
 }

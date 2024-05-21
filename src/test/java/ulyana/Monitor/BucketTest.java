@@ -1,14 +1,13 @@
 package ulyana.Monitor;
 
-import org.junit.Test;
-import ulyana.Monitor.*;
+import org.junit.jupiter.api.Test;
 import java.net.*;
 import java.util.ArrayList;
 import static org.junit.Assert.assertEquals;
 
 public class BucketTest {
     @Test
-    public void add(){
+    public void add() {
         try {
             Bucket clusterMap = new Bucket("root", "root");
             Bucket row1 = new Bucket("row", "row1");
@@ -19,7 +18,6 @@ public class BucketTest {
             ArrayList<Bucket> expected = new ArrayList<>();
             expected.add(row1);
             assertEquals(expected, clusterMap.getMap());
-
             //проверка метода find
             //не стала выносить в отдельный тест только из-за одной строки
             assertEquals(row1, clusterMap.find("row1"));

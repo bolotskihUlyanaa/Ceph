@@ -1,111 +1,110 @@
 package ulyana.MDS;
 
+import ulyana.OSD.*;
+import ulyana.Monitor.*;
 import java.io.*;
 import java.util.ArrayList;
 
-//операции если mds хранится на диске
-public class MDSDisk{
-    final private String path;//путь где будет храниться файл
+//операции если mds хранится на OSD
+//после каждого изменения пересохраняется на диски
+public class MDSDisk {
+    private MDS mds;
+    final private DataOperation osd;
+    final private MonitorOperation monitor;
+    final private String inodeNumber = "0";//нужен для сохранения на osd блока с размером файла
+    final private int sizeBlock = 4096;
 
-    public MDSDisk(String path){
-        try {
-            String[] directoires = path.split("/");
-            for (int j = 0; j <= directoires.length - 1; j++) {
-                StringBuilder directory = new StringBuilder();
-                for (int i = 0; i < j; i++) {
-                    directory.append(directoires[i] + "/");
-                }
-                File f = new File(directory.toString());
-                if (!f.isDirectory()) f.mkdirs();
-            }
-            File file = new File(path);
-            file.createNewFile();//если такого файла не существует, создадим его
-        }
-        catch(Exception ex){
-            System.out.println(ex.getMessage());
-        }
-        this.path = path;
+    public MDSDisk(DataOperation osd, MonitorOperation monitor) throws Exception {
+        this.osd = osd;
+        this.monitor = monitor;
+        loadFromOSD();
     }
 
-    //добавить файл
-    public Object addInodeFile(String nameInode, int size, int countBlock) throws IOException, ClassNotFoundException{
-        MDS mds = load();
+    public Object addInodeFile(String nameInode, int size, int countBlock) throws Exception {
         Object result = mds.addInodeFile(nameInode, size, countBlock);
-        saveToFile(mds);
+        if (result instanceof Integer) {
+            MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
+            save.start();
+            save.join();
+        }
         return result;
     }
 
-    //добавить подкаталог
-    public Object addInodeDirectory(String nameInode) throws IOException, ClassNotFoundException{
-        MDS mds = load();
+    public Object addInodeDirectory(String nameInode) throws Exception {
         Object result = mds.addInodeDirectory(nameInode);
-        saveToFile(mds);
+        if (result instanceof Integer) {
+            MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
+            save.start();
+            save.join();
+        }
         return result;
     }
 
-    //удаление файла
-    public InodeFile removeFile(String nameInode) throws IOException, ClassNotFoundException{
-        MDS mds = load();
+    public InodeFile removeFile(String nameInode) throws Exception {
         InodeFile result = mds.removeFile(nameInode);
-        saveToFile(mds);
+        MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
+        save.start();
+        save.join();
         return result;
     }
 
-    //удалить каталог
-    public ArrayList<InodeFile> removeDirectory(String nameInode) throws IOException, ClassNotFoundException{
-        MDS mds = load();
+    public ArrayList<InodeFile> removeDirectory(String nameInode) throws Exception {
         ArrayList<InodeFile> result = mds.removeDirectory(nameInode);
-        saveToFile(mds);
+        MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
+        save.start();
+        save.join();
         return result;
     }
 
-    //найти файл, т.е. получить inode
-    public InodeFile find(String nameInode) throws IOException, ClassNotFoundException{
-        MDS mds = load();
+    public InodeFile find(String nameInode) throws Exception {
         return mds.find(nameInode);
     }
 
-    //посмотреть какие есть inode в текущем каталоге
-    public String ls(String nameInode) throws IOException, ClassNotFoundException{
-        MDS mds = load();
+    public String ls(String nameInode) {
         return mds.ls(nameInode);
     }
 
-    //перейти в директорию
-    public boolean cd(String nameInode) throws IOException, ClassNotFoundException{
-        MDS mds = load();
+    public boolean cd(String nameInode) throws Exception {
         boolean result = mds.cd(nameInode);
-        saveToFile(mds);
+        if (result) {
+            MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
+            save.start();
+            save.join();
+        }
         return result;
     }
 
-    //узнать путь к текущему каталогу
-    public String pwd() throws IOException, ClassNotFoundException{
-        MDS mds = load();
+    public String pwd() {
         return mds.pwd();
     }
 
-    //загрузить mds из файла
-    public MDS load() throws IOException, ClassNotFoundException {
-        FileInputStream inputStream = new FileInputStream(path);
-        //файл может быть пустой потому что в нем ещё не хранили данные,
-        //чтобы не выдавало ошибку нужна эта проверка
-        MDS mds;
-        if (inputStream.available() > 0) {
+    //загрузить mds из osd если было сохранение или создать mds если до этого на диске не хранился
+    public void loadFromOSD() throws Exception {
+        CalculateOSD calculateOSD = new CalculateOSD(monitor);
+        ArrayList<DiskBucket> osds = calculateOSD.getOSDs(inodeNumber);
+        Block block = osd.get(osds.get(0), inodeNumber);//ищем блок в котором содержится количество байт которое занимает mds
+        //если такой блок не нашли значит такого сохранения не было
+        if (block != null) {
+            String sizeString = new String(block.getData());
+            int size = Integer.parseInt(sizeString);
+            int countBlock = (size / sizeBlock) + 1;
+            byte[] mdsByte = new byte[size];//результирующий массив с mds
+            for (int i = 0; i < countBlock; i++) {
+                String idBlock = inodeNumber.concat(".") + i;
+                osds = calculateOSD.getOSDs(inodeNumber);
+                block = osd.get(osds.get(0), idBlock);
+                if (block == null)
+                    throw new Exception("Load mds failure");
+                System.arraycopy(block.getData(), 0, mdsByte, i * sizeBlock, block.getData().length);
+            }
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(mdsByte);
             ObjectInputStream in = new ObjectInputStream(inputStream);
             mds = (MDS) in.readObject();
             in.close();
-        } else mds = new MDS();
-        inputStream.close();
-        return mds;
-    }
-
-    //сохранить в файл
-    public void saveToFile(MDS mds) throws IOException {
-        FileOutputStream outputStream = new FileOutputStream(path);
-        ObjectOutputStream out = new ObjectOutputStream(outputStream);
-        out.writeObject(mds);
-        out.close();
-        outputStream.close();
+            inputStream.close();
+        }
+        else {
+            mds = new MDS();
+        }
     }
 }

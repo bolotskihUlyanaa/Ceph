@@ -2,6 +2,11 @@ package ulyana.Monitor;
 
 public class Main {
     public static void main(String []args) {
-        new Monitor();
+        try {
+            MonitorNet monitor = new MonitorNet();
+            monitor.run();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -15,15 +15,19 @@ public class InodeFile extends Inode implements Serializable {
         type = 0;
     }
 
-    public int size(){return size;}
+    public int size() {
+        return size;
+    }
 
-    public void setSize(int size){this.size = size;}
+    public void setSize(int size) {
+        this.size = size;
+    }
 
-    public void setCountBlock(int countBlock){
+    public void setCountBlock(int countBlock) {
         this.countBlock = countBlock;
     }
 
-    public int getCountBlock(){
+    public int getCountBlock() {
         return countBlock;
     }
 }

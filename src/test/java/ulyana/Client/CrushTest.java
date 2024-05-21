@@ -1,19 +1,26 @@
 package ulyana.Client;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import ulyana.Monitor.*;
 import java.net.*;
 import java.util.ArrayList;
 import static org.junit.Assert.assertEquals;
 
 public class CrushTest {
+    private Crush crush;
+
+    @BeforeEach
+    public void init(){
+        crush = new Crush();
+    }
+
     @Test
     public void select(){
         try {
             //создадим карту из одного компьютера и проверим что выберем этот компьютер
             ArrayList<Bucket> map = new ArrayList<Bucket>();
             map.add(new DiskBucket(InetAddress.getLocalHost(), 10000));
-            Crush crush = new Crush();
             crush.setMap(map);
             crush.select("123.3", 1, "OSD");
             ArrayList<ArrayList<Bucket>> result = crush.get();
@@ -61,7 +68,6 @@ public class CrushTest {
         for(int i = 0; i < primeNumber.length; i++){
             expected[primeNumber[i]] = true;
         }
-        Crush crush = new Crush();
         for(int i = 1; i < 102; i++){
             assertEquals(expected[i], crush.isPrime(i));
         }
@@ -69,7 +75,6 @@ public class CrushTest {
 
     @Test
     public void getPrimeNumber(){
-        Crush crush = new Crush();
         int expected = 0;
         for(int i = 0; i < 101; i++){
             if(i < 2) expected = 2;
