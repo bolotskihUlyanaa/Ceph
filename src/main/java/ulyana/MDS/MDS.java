@@ -77,7 +77,7 @@ public class MDS implements Serializable {
 
     //удаление файла
     //возвращает inode если такой файл найден и удален, иначе null
-    public InodeFile removeFile(String nameInode) {
+    public Object removeFile(String name, String nameInode) {
         try {
             Pair pair = findDirectory(nameInode);//ищем директорию в которой нужно удалить файл
             if (pair.name == null)
@@ -85,48 +85,59 @@ public class MDS implements Serializable {
             InodeFile inode = pair.inode.searchFile(pair.name);//ищем файл в директории
             if (inode == null)
                 throw new Exception("such file doesn't exist");//файл не найден
+            if (!inode.access(name)) throw new Exception("this file block by " + inode.getUserBlock());
             int inodeID = inode.getID();
             pair.inode.delete(inodeID);//в директории удаляем inode
             return inode;
         } catch(Exception ex) {
-            return null;
+            return ex.getMessage();
         }
     }
 
     //удалить каталог
     //возвращает список inode которые удалили
     //произошла ошибка - вернется null
-    public ArrayList<InodeFile> removeDirectory(String nameInode) {
+    public Object removeDirectory(String name, String nameInode) {
         try {
-            ArrayList<InodeFile> inodes = new ArrayList<InodeFile>();
+            ArrayList<InodeFile> inodesFile = new ArrayList<InodeFile>();
+            ArrayList<InodeDirectory> inodesDir = new ArrayList<InodeDirectory>();
             Pair pair = findDirectory(nameInode);//ищем директорию в которой нужно удалить директорию
             if (pair.name == null)
                 throw new Exception("such directory doesn't exist");
             InodeDirectory inode = pair.inode.searchDirectory(pair.name);//ищем директорию в директории
             if (inode == null)
                 throw new Exception("such directory doesn't exist");
-            remove(inode, inodes);//удалить всех потомков
+            remove(name, inode, inodesFile, inodesDir);//удалить всех потомков
+            for (InodeDirectory i : inodesDir) {
+                i.removeAll();
+                if (curInode.getID() == i.getID())
+                    curInode = root;//если нужно удалить директорию в которой сейчас находимся
+            }
             int curInodeID = inode.getID();//взять id директории которую нужно удалить
             pair.inode.delete(curInodeID);//удалить из родительской директории
-            return inodes;
+            return inodesFile;
         } catch(Exception ex) {
-            return null;
+            return ex.getMessage();
         }
     }
 
     //рекурсивное удаление директории
     //пройти по иерархии и удалить все нижележащие inode
     //arraylist нужен чтобы запоминать inode файлов, чтобы удалить эти блоки с диска
-    private void remove(InodeDirectory inode, ArrayList<InodeFile> inodes) {
-        if (curInode.getID() == inode.getID())
-            curInode = root;//если нужно удалить директорию в которой сейчас находимся
+    private void remove(String name, InodeDirectory inode, ArrayList<InodeFile> inodesFile, ArrayList<InodeDirectory> inodesDir) throws Exception {
+        //if (curInode.getID() == inode.getID())
+        //    curInode = root;//если нужно удалить директорию в которой сейчас находимся
         for(int i = 0; i < inode.size(); i++){//пройти по всем потомкам
             if (inode.get(i).getType() == 1)
-                remove((InodeDirectory) inode.get(i), inodes);//если потомок - директория, то вызвать директорию
-            else
-                inodes.add((InodeFile) inode.get(i));//если потомок файл - сохранить его inode
+                remove(name, (InodeDirectory) inode.get(i), inodesFile, inodesDir);//если потомок - директория, то вызвать директорию
+            else {
+                InodeFile inodeFile = (InodeFile) inode.get(i);
+                if (!inodeFile.access(name)) throw new Exception("blocked files cannot be deleted");
+                inodesFile.add((InodeFile) inode.get(i));//если потомок файл - сохранить его inode
+            }
         }
-        inode.removeAll();//удалить всех потомков
+        inodesDir.add(0, inode);
+        //inode.removeAll();//удалить всех потомков
     }
 
     //найти файл
@@ -197,6 +208,7 @@ public class MDS implements Serializable {
     //найти директорию в которой располагается inode, то есть если папка res/src/q мы будем искать res/src !!!!
     //если такую директорию не нашли возвращает null, иначе возвращает пару Pair: inodeDirectory в котором хотим создать и имя Inode который ходим создать
     public Pair findDirectory(String nameInode) throws Exception {
+        if (nameInode == null) throw new Exception("no such directory: ");
         InodeDirectory inode = curInode;
         if (nameInode.startsWith("/".concat(ROOT)))//если файл начинается /ROOT, то обрезаем это
             nameInode = nameInode.substring(ROOT.length() + 1);
@@ -216,5 +228,34 @@ public class MDS implements Serializable {
         //возвращаем имя файла или каталога на самом нижнем уровне
         //и директорию в которой должен лежать этот inode
         return new Pair(words[words.length - 1], inode);
+    }
+
+    //чтобы обновить метаданные
+    public Object updateFile(String nameUser, String nameFile, int size, int countBlock) {
+        InodeFile file = find(nameFile);
+        if (file == null) return "such file doesn't exist";
+        if (!file.access(nameUser)) return "you don't have access to this file";
+        file.setSize(size);
+        file.setCountBlock(countBlock);
+        return true;
+    }
+
+    //заблокировать файл
+    public Object blockFile(String nameUser, String nameFile) {
+        if (nameUser == null || nameUser.equals("noname")) return "users without name can't block file";
+        InodeFile file = find(nameFile);
+        if (file == null) return "such file doesn't exist";
+        if (!file.access(nameUser)) return "this file already block by " + file.getUserBlock();
+        file.setBlock(nameUser);
+        return true;
+    }
+
+    //разблокировать файл
+    public Object unblockFile(String nameUser, String nameFile) {
+        InodeFile file = find(nameFile);
+        if (file == null) return "such file doesn't exist";
+        if (!file.access(nameUser)) return "this file block by " + file.getUserBlock();
+        file.setBlock(null);
+        return true;
     }
 }

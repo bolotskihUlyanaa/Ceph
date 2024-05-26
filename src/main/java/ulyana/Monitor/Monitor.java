@@ -16,23 +16,25 @@ public class Monitor {
     class Host {
         InetAddress ip;
         int port;
+        int condition;//0 - не работает; 1 - работает
 
-        public Host(String ip, int port) throws Exception {
+        public Host(String ip, int port, int condition) throws Exception {
                 this.ip = InetAddress.getByName(ip);
                 this.port = port;
+                this.condition = condition;
         }
 
         public String toString() {
-            return ip.getHostAddress().concat(" ").concat(Integer.toString(port));
+            return ip.getHostAddress().concat(" ").concat(Integer.toString(port)).concat(" ").concat(Integer.toString(condition));
         }
 
     }
 
     public Monitor() throws Exception {
-        clusterMap = new Bucket("root", "root");
+        clusterMap = new Bucket("root", "root", 1);
         readConf(nameFileConf);
         for (Host host: addressOSD) {
-            clusterMap.add(new DiskBucket(host.ip, host.port));
+            clusterMap.add(new DiskBucket(host.ip, host.port, host.condition));
         }
         //clusterMap.find(nameBucket).add(d); чтобы добавить потомка для определенного узла
     }
@@ -69,8 +71,8 @@ public class Monitor {
         addressOSD = new ArrayList<Host>();
         for (String host : address) {
             String[] parts = host.split(" ");
-            if (parts.length == 2) {
-                addressOSD.add(new Host(parts[0], Integer.parseInt(parts[1])));
+            if (parts.length == 3) {
+                addressOSD.add(new Host(parts[0], Integer.parseInt(parts[1]), Integer.parseInt(parts[2])));
             }
             else{
                 throw new Exception("Error in conf.txt \nMust be pair: ip port");

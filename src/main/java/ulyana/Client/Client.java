@@ -5,6 +5,7 @@ import ulyana.MDS.*;
 import ulyana.OSD.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 //для работы с CephFS надо всегда добавлять приставку /ceph/
 public class Client {
@@ -13,13 +14,24 @@ public class Client {
     final private MonitorOperation monitor;//взаимодействие с монитором
     final private ProcessBuilder processBuilder;//для выполнения команд в локальном компьютере
     final int sizeBlock = 4096;//размер блока для разделения файла
+    private String name;
 
     public Client(MetaDataOperation mds, DataOperation osd, MonitorOperation monitor) {
         this.mds = mds;
         this.osd = osd;
         this.monitor = monitor;
         processBuilder = new ProcessBuilder();
+        this.name = "noname";
     }
+
+    public Client(String name, MetaDataOperation mds, DataOperation osd, MonitorOperation monitor) {
+        this.mds = mds;
+        this.osd = osd;
+        this.monitor = monitor;
+        processBuilder = new ProcessBuilder();
+        this.name = name;
+    }
+
 
     public void commandLine(String input) {
         try {
@@ -100,6 +112,16 @@ public class Client {
                     }
                     break;
                 case ("cp"):
+                    if (command.length == 4 && command[2].startsWith("/ceph/") && command[3].equals("--force")) {
+                        command[2] = command[2].substring(6);
+                        if (command[1].startsWith("/ceph/")) {
+                            command[1] = command[1].substring(6);
+                            copyInodeFS(command[1], command[2]);
+                        } else {
+                            copyInodeToFS(processBuilder.directory(), command[1], command[2], true);
+                        }
+                        break;
+                    }
                     if (command.length != 3)
                         throw new RuntimeException("incorrect number of arguments");
                     if (command[1].startsWith("/ceph/")) {
@@ -107,13 +129,12 @@ public class Client {
                         if (command[2].startsWith("/ceph/")) {//копирование из ceph в ceph
                             command[2] = command[2].substring(6);
                             copyInodeFS(command[1], command[2]);
-                        }
-                        else
+                        } else
                             copyInodeFromFS(command[1], processBuilder.directory(), command[2]);//копирование из ceph в local
                     } else {
                         if (command[2].startsWith("/ceph/")) {
                             command[2] = command[2].substring(6);
-                            copyInodeToFS(processBuilder.directory(), command[1], command[2]);//копирование из local в ceph
+                            copyInodeToFS(processBuilder.directory(), command[1], command[2], false);//копирование из local в ceph
                         } else {
                             processBuilder.command(command);//копирование из local в local
                             processInput();
@@ -135,10 +156,10 @@ public class Client {
                                 if (command[i].startsWith("/ceph/")) {
                                     command[i] = command[i].substring(6);
                                     if (command[i].equals(""))
-                                        throw new Exception("you can't remove directory without name");
+                                        throw new RuntimeException("you can't remove directory without name");
                                     removeDirectory(command[i]);
                                 } else
-                                    throw new Exception("such directory doesn't exist: " + command[i]);
+                                    throw new RuntimeException("such directory doesn't exist: " + command[i]);
                             } catch (Exception ex) {
                                 System.out.println(ex.getMessage());
                             }
@@ -150,10 +171,10 @@ public class Client {
                                 if (command[i].startsWith("/ceph/")) {
                                     command[i] = command[i].substring(6);
                                     if (command[i].equals(""))
-                                        throw new Exception("you can't remove file without name");
+                                        throw new RuntimeException("you can't remove file without name");
                                     removeFile(command[i]);
                                 } else
-                                    throw new Exception("such directory doesn't exist: " + command[i]);
+                                    throw new RuntimeException("such directory doesn't exist: " + command[i]);
                             } catch (Exception ex) {
                                 System.out.println(ex.getMessage());
                             }
@@ -162,10 +183,43 @@ public class Client {
                     break;
                 case ("find"):
                     if (command[1].startsWith("/ceph/")) {
+                        command[1] = command[1].substring(6);
                         InodeFile inode = mds.find(command[1]);
                         if (inode == null)
                             throw new RuntimeException("such file doesn't exist");
-                        System.out.println(inode);
+                        System.out.println(inode.getMetadata());
+                    }
+                    break;
+                case("block"):
+                    for (int i = 1; i < command.length; i++) {
+                        if (command[i].startsWith("/ceph/")) {
+                            command[i] = command[i].substring(6);
+                            try {
+                                if (command[i].equals(""))
+                                    throw new RuntimeException("you can't block file without name");
+                                Object result = mds.block(name, command[i]);
+                                if (result instanceof String) //если вернулась строка то значит там сообщение об ошибке
+                                    throw new RuntimeException((String) result);
+                            } catch (Exception ex) {
+                                System.out.println(ex.getMessage());
+                            }
+                        }
+                    }
+                    break;
+                case("unblock"):
+                    for (int i = 1; i < command.length; i++) {
+                        if (command[i].startsWith("/ceph/")) {
+                            command[i] = command[i].substring(6);
+                            try {
+                                if (command[i].equals(""))
+                                    throw new RuntimeException("you can't unblock file without name");
+                                Object result = mds.unblock(name, command[i]);
+                                if (result instanceof String) //если вернулась строка то значит там сообщение об ошибке
+                                    throw new RuntimeException((String) result);
+                            } catch (Exception ex) {
+                                System.out.println(ex.getMessage());
+                            }
+                        }
                     }
                     break;
                 default:
@@ -179,14 +233,26 @@ public class Client {
 
     //копирование из локального компьютера в ceph
     //передается текущая директория, имя файла и имя файла куда сохранить
-    public void copyInodeToFS(File directory, String nameFileCopy, String nameInode) throws Exception {
+    public void copyInodeToFS(File directory, String nameFileCopy, String nameInode, boolean force) throws Exception {
         File file = new File(directory, nameFileCopy);
         if (!file.exists())
             throw new RuntimeException("such file doesn't exist: ".concat(nameFileCopy));
         FileInputStream fileBytes = new FileInputStream(file);
         int size = fileBytes.available();
         int countBlock = (size / sizeBlock) + 1;
-        Object result = mds.addInodeFile(nameInode, size, countBlock);
+        Object result = null;
+        InodeFile searchInode = mds.find(nameInode);
+        if (searchInode != null) {//если такой файл уже есть
+            if (force) {
+                Object resultUpdate = mds.update(name, nameInode, size, countBlock);
+                if (resultUpdate instanceof String) throw new RuntimeException((String) resultUpdate);
+                removeInode(searchInode);
+                result = searchInode.getID();
+            }
+        }
+        else {//если такого файла нет то создаем
+            result = mds.addInodeFile(nameInode, size, countBlock);
+        }
         if (result instanceof Integer) {//если вернулось число - это ID inode который создался в файловой системе
             int inodeID = (int) result;
             int countRead = sizeBlock;//сколько байт считать в блок
@@ -200,8 +266,9 @@ public class Client {
                 ArrayList<DiskBucket> osds = calculateOSD.getOSDs(idBlock);
                 Block block = new Block(idBlock, i * sizeBlock, data);
                 for (DiskBucket disk : osds) {
-                    if (!osd.put(disk, block))
-                        throw new Exception("save file failure");
+                    osd.put(disk, block);
+                    //if (!osd.put(disk, block))
+                    //    throw new Exception("save file failure");
                 }
             }
             fileBytes.close();
@@ -209,7 +276,7 @@ public class Client {
         //когда возвращается строка - в ней записана причин почему не удалось добавить файл в файловую систему
         else {
             fileBytes.close();
-            throw new Exception((String)result);
+            if (result != null) throw new Exception((String)result);
         }
     }
 
@@ -231,14 +298,18 @@ public class Client {
             for (int i = 0; i < inode.getCountBlock(); i++) {//собираем все блоки
                 String idBlock = inodeID + "." + i;
                 ArrayList<DiskBucket> osds = calculateOSD.getOSDs(idBlock);
-                Block block = osd.get(osds.get(0), idBlock);
+                Block block = null;
+                for(DiskBucket disk:osds) {
+                    block = osd.get(disk, idBlock);
+                    if (block != null) break;
+                }
                 if (block == null)
                     throw new Exception("get file failure");
                 fileBytes.write(block.getData());
             }
             fileBytes.close();
         }
-        else throw new Exception("such file or directory doesn't exist");
+        else throw new RuntimeException("such file or directory doesn't exist");
     }
 
     //копирование файла внутри файловой системы ceph
@@ -253,7 +324,11 @@ public class Client {
                 for (int i = 0; i < inodeSource.getCountBlock(); i++) {//собираем все блоки
                     String idBlockSource = idSource + "." + i;
                     ArrayList<DiskBucket> osdsSource = calculateOSD.getOSDs(idBlockSource);
-                    Block blockSource = osd.get(osdsSource.get(0), idBlockSource);//обратиться к конкретному osd для получения блока
+                    Block blockSource = null;
+                    for(DiskBucket disk:osdsSource) {
+                        blockSource = osd.get(disk, idBlockSource);
+                        if (blockSource != null) break;
+                    }
                     if (blockSource == null)
                         throw new Exception("get file failure");
                     byte[] data = blockSource.getData();
@@ -261,8 +336,9 @@ public class Client {
                     ArrayList<DiskBucket> osdsDestination = calculateOSD.getOSDs(idBlockDestination);
                     Block block = new Block(idBlockDestination, i * sizeBlock, data);
                     for (DiskBucket disk : osdsDestination) {
-                        if (!osd.put(disk, block))
-                            throw new Exception("save file failure");
+                        osd.put(disk, block);
+                        //if (!osd.put(disk, block))
+                        //    throw new Exception("save file failure");
                     }
                 }
             }
@@ -270,27 +346,22 @@ public class Client {
                 throw new Exception((String)result);
         }
         else
-            throw new Exception("such file or directory doesn't exist");
+            throw new RuntimeException("such file or directory doesn't exist");
     }
 
     //удалить директорию на MDS, а затем удалить на OSD все блоки inode которые принадлежали файлам в этой директории
     public void removeDirectory(String nameInode) throws Exception {
-        ArrayList<InodeFile> inodes = mds.removeDirectory(nameInode);//получаем список inodeFile который надо удалить из osd
-        if (inodes != null) {
-            for (InodeFile inode : inodes)//удаляем все файлы
-                removeInode(inode);
-        }
-        else
-            throw new Exception("such directory doesn't exist");
+        Object result = mds.removeDirectory(name, nameInode);//получаем список inodeFile который надо удалить из osd
+        if (result instanceof String) throw new Exception((String) result);
+        for (InodeFile inode : (ArrayList<InodeFile>) result)//удаляем все файлы
+            removeInode(inode);
     }
 
     //удалить файл в mds, а затем на osds удалить блоки которые принадлежали этому файлу
     public void removeFile(String nameInode) throws Exception{
-        InodeFile inode = mds.removeFile(nameInode);// получаем InodeFile который нужно удалить с osd
-        if (inode != null)
-            removeInode(inode);
-        else
-            throw new Exception("such file doesn't exist");
+        Object result = mds.removeFile(name, nameInode);// получаем InodeFile который нужно удалить с osd
+        if (result instanceof String) throw new Exception((String) result);
+        removeInode((InodeFile)result);
     }
 
     //удалить inode на OSDs
@@ -300,8 +371,9 @@ public class Client {
             String idBlock = inode.getID() + "." + i;
             ArrayList<DiskBucket> osds = calculateOSD.getOSDs(idBlock);
             for (DiskBucket disk : osds) {
-                if (!osd.remove(disk, idBlock))
-                    throw new Exception("remove inode failure");
+                osd.remove(disk, idBlock);
+                //if (!osd.remove(disk, idBlock))
+                    //throw new Exception("remove inode failure");
             }
         }
     }

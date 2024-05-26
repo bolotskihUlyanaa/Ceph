@@ -20,7 +20,7 @@ public class CrushTest {
         try {
             //создадим карту из одного компьютера и проверим что выберем этот компьютер
             ArrayList<Bucket> map = new ArrayList<Bucket>();
-            map.add(new DiskBucket(InetAddress.getLocalHost(), 10000));
+            map.add(new DiskBucket(InetAddress.getLocalHost(), 10000, 1));
             crush.setMap(map);
             crush.select("123.3", 1, "OSD");
             ArrayList<ArrayList<Bucket>> result = crush.get();
@@ -28,13 +28,13 @@ public class CrushTest {
 
             //проверка на иерархической структуре
             //создаем карту из двух row, в одном row один диск
-            Bucket clusterMap = new Bucket("root", "root");
-            Bucket row1 = new Bucket("row", "row1");
-            Bucket row2 = new Bucket("row", "row2");
+            Bucket clusterMap = new Bucket("root", "root", 1);
+            Bucket row1 = new Bucket("row", "row1", 1);
+            Bucket row2 = new Bucket("row", "row2", 1);
             clusterMap.add(row1);
             clusterMap.add(row2);
-            DiskBucket disk1001 = new DiskBucket(InetAddress.getByName("localhost"), 1001);
-            DiskBucket disk1002 = new DiskBucket(InetAddress.getByName("localhost"), 1002);
+            DiskBucket disk1001 = new DiskBucket(InetAddress.getByName("localhost"), 1001, 1);
+            DiskBucket disk1002 = new DiskBucket(InetAddress.getByName("localhost"), 1002, 1);
             clusterMap.find("row1").add(disk1001);
             clusterMap.find("row2").add(disk1002);
             crush = new Crush();//создаем новый объект так как карта меняется, а метод setMap не заново задает карту

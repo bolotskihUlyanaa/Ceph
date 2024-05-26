@@ -21,9 +21,9 @@ public class MDSSaveToOSDTest {
             MO mon = Mockito.mock(MO.class);
             int pgNum = 10;
             int countOfReplica = 3;
-            Bucket clusterMap = new Bucket("root", "root");
+            Bucket clusterMap = new Bucket("root", "root", 1);
             for (int i = 0; i < 10; i++) {
-                clusterMap.add(new DiskBucket(InetAddress.getLocalHost(), 11000 + i));
+                clusterMap.add(new DiskBucket(InetAddress.getLocalHost(), 11000 + i, 1));
             }
             Mockito.doReturn(clusterMap.getMap()).when(mon).getMap();
             Mockito.doReturn(pgNum).when(mon).getPGNum();

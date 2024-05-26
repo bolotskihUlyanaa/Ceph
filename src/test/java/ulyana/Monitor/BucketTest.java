@@ -9,12 +9,12 @@ public class BucketTest {
     @Test
     public void add() {
         try {
-            Bucket clusterMap = new Bucket("root", "root");
-            Bucket row1 = new Bucket("row", "row1");
+            Bucket clusterMap = new Bucket("root", "root", 1);
+            Bucket row1 = new Bucket("row", "row1", 1);
             clusterMap.add(row1);
             //проверка что на одном уровне должны быть сегменты только одного типа, то есть другого типа не добавятся
-            clusterMap.add(new DiskBucket(InetAddress.getByName("localhost"), 1000));
-            clusterMap.add(new Bucket("cabinet", "cabinet1"));
+            clusterMap.add(new DiskBucket(InetAddress.getByName("localhost"), 1000, 1));
+            clusterMap.add(new Bucket("cabinet", "cabinet1", 1));
             ArrayList<Bucket> expected = new ArrayList<>();
             expected.add(row1);
             assertEquals(expected, clusterMap.getMap());
@@ -23,8 +23,8 @@ public class BucketTest {
             assertEquals(row1, clusterMap.find("row1"));
 
             //проверить добавление ещё одного уровня
-            DiskBucket disk1000 = new DiskBucket(InetAddress.getByName("localhost"), 1000);
-            DiskBucket disk1001 = new DiskBucket(InetAddress.getByName("localhost"), 1001);
+            DiskBucket disk1000 = new DiskBucket(InetAddress.getByName("localhost"), 1000, 1);
+            DiskBucket disk1001 = new DiskBucket(InetAddress.getByName("localhost"), 1001, 1);
             clusterMap.find("row1").add(disk1000);
             clusterMap.find("row1").add(disk1001);
             expected = new ArrayList<>();

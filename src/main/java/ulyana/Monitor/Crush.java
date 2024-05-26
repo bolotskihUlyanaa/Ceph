@@ -23,6 +23,7 @@ public class Crush {
         list = listNew;
          */
         select(x, countOfReplicas, "OSD");
+        list.get(0).removeIf(Bucket::isFailure);
         return list.get(0);
     }
 
@@ -42,12 +43,11 @@ public class Crush {
                     o = c(b, rNew, x);//выбираем сегмент из b
                     if (O.contains(o) && o.getClass().getSimpleName().equals(t)) {//проверка на коллизию и на тип
                         fr++;
-                    }
-                    else {
+                    } else {
                         retryBucket = true;
                     }
                 }
-               O.add(o);
+                O.add(o);
             }
         }
         list = new ArrayList<ArrayList<Bucket>>();

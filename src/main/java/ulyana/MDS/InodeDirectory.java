@@ -8,11 +8,8 @@ public class InodeDirectory extends Inode implements Serializable {
     final private ArrayList<Inode> nodes;//ссылки на потомков
 
     public InodeDirectory(String nameInode, String path, int numberInode) {
-        name = nameInode;
-        layout = path;
-        number = numberInode;
+        super(nameInode, path, numberInode, 1);
         nodes = new ArrayList<Inode>();
-        type = 1;
     }
 
     //добавить потомка
@@ -62,6 +59,7 @@ public class InodeDirectory extends Inode implements Serializable {
     }
 
     //получить всех потомков
+    //используется только в тестах
     public ArrayList<Inode> getNodes() {
         return nodes;
     }

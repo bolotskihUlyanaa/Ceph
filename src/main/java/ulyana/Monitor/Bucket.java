@@ -8,10 +8,12 @@ public class Bucket implements Serializable {
         final private String type;//тип сегмента
         final private String name;//имя конкретного сегмента
         final private ArrayList<Bucket> nodes;//ссылки на потомков
+        private int conditional;
 
-        public Bucket(String type, String name) {
+        public Bucket(String type, String name, int conditional) {
                 this.type = type;
                 this.name = name;
+                this.conditional = conditional;
                 nodes = new ArrayList<Bucket>();
         }
 
@@ -27,7 +29,7 @@ public class Bucket implements Serializable {
                                         nodes.add(bucket);
                                 }
                         }
-                } catch(Exception ex) {
+                } catch (Exception ex) {
                         System.out.println(ex.getMessage());
                 }
         }
@@ -45,13 +47,18 @@ public class Bucket implements Serializable {
         }
 
         public Bucket find(String bucketName) {
-                for(Bucket i:nodes){
-                        if(i.getName().equals(bucketName)) return i;
+                for (Bucket i : nodes) {
+                        if (i.getName().equals(bucketName)) return i;
                 }
                 return null;
         }
 
         public String toString() {
                 return name;
+        }
+
+        public boolean isFailure() {
+                if (conditional == 1) return false;
+                return true;
         }
 }

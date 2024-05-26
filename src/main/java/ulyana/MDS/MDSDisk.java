@@ -40,16 +40,16 @@ public class MDSDisk {
         return result;
     }
 
-    public InodeFile removeFile(String nameInode) throws Exception {
-        InodeFile result = mds.removeFile(nameInode);
+    public Object removeFile(String name, String nameInode) throws Exception {
+        Object result = mds.removeFile(name, nameInode);
         MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
         save.start();
         save.join();
         return result;
     }
 
-    public ArrayList<InodeFile> removeDirectory(String nameInode) throws Exception {
-        ArrayList<InodeFile> result = mds.removeDirectory(nameInode);
+    public Object removeDirectory(String name, String nameInode) throws Exception {
+        Object result = mds.removeDirectory(name, nameInode);
         MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
         save.start();
         save.join();
@@ -57,11 +57,37 @@ public class MDSDisk {
     }
 
     public InodeFile find(String nameInode) throws Exception {
-        return mds.find(nameInode);
+        InodeFile result = mds.find(nameInode);
+        if (result != null) return new InodeFile(result);
+        return null;
     }
 
     public String ls(String nameInode) {
         return mds.ls(nameInode);
+    }
+
+    public Object update(String nameUser, String nameInode, int size, int countBlock) throws Exception {
+        Object result = mds.updateFile(nameUser, nameInode, size, countBlock);
+        MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
+        save.start();
+        save.join();
+        return result;
+    }
+
+    public Object blockFile(String nameUser, String nameInode) throws Exception {
+        Object result = mds.blockFile(nameUser, nameInode);
+        MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
+        save.start();
+        save.join();
+        return result;
+    }
+
+    public Object unblockFile(String nameUser, String nameInode) throws Exception {
+        Object result = mds.unblockFile(nameUser, nameInode);
+        MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
+        save.start();
+        save.join();
+        return result;
     }
 
     public boolean cd(String nameInode) throws Exception {
@@ -82,7 +108,11 @@ public class MDSDisk {
     public void loadFromOSD() throws Exception {
         CalculateOSD calculateOSD = new CalculateOSD(monitor);
         ArrayList<DiskBucket> osds = calculateOSD.getOSDs(inodeNumber);
-        Block block = osd.get(osds.get(0), inodeNumber);//ищем блок в котором содержится количество байт которое занимает mds
+        Block block = null;
+        for(DiskBucket disk:osds) {
+            block = osd.get(disk, inodeNumber);
+            if (block != null) break;
+        }
         //если такой блок не нашли значит такого сохранения не было
         if (block != null) {
             String sizeString = new String(block.getData());
@@ -92,7 +122,11 @@ public class MDSDisk {
             for (int i = 0; i < countBlock; i++) {
                 String idBlock = inodeNumber.concat(".") + i;
                 osds = calculateOSD.getOSDs(inodeNumber);
-                block = osd.get(osds.get(0), idBlock);
+                block = null;
+                for(DiskBucket disk:osds) {
+                    block = osd.get(disk, idBlock);
+                    if (block != null) break;
+                }
                 if (block == null)
                     throw new Exception("Load mds failure");
                 System.arraycopy(block.getData(), 0, mdsByte, i * sizeBlock, block.getData().length);

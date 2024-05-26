@@ -10,12 +10,12 @@ public class MDO implements MetaDataOperation {
         mds = new MDS();
     }
 
-    public InodeFile removeFile(String nameInode) {
-        return mds.removeFile(nameInode);
+    public Object removeFile(String name, String nameInode) {
+        return mds.removeFile(name, nameInode);
     }
 
-    public ArrayList<InodeFile> removeDirectory(String nameInode) {
-        return(mds.removeDirectory(nameInode));
+    public Object removeDirectory(String name, String nameInode) {
+        return(mds.removeDirectory(name, nameInode));
     }
 
     public Object addInodeFile(String nameInode, int size, int countBlock) {
@@ -41,5 +41,17 @@ public class MDO implements MetaDataOperation {
 
     public String pwd() {
         return mds.pwd();
+    }
+
+    public Object update(String nameUser, String nameInode, int size, int countBlock) {
+        return mds.updateFile(nameUser, nameInode, size, countBlock);
+    }
+
+    public Object block(String nameUser, String nameInode) {
+        return mds.blockFile(nameUser, nameInode);
+    }
+
+    public Object unblock(String nameUser, String nameInode) {
+        return mds.unblockFile(nameUser, nameInode);
     }
 }

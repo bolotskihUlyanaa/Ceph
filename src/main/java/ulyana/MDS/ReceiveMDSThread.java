@@ -24,14 +24,23 @@ public class ReceiveMDSThread extends Thread {
                 case ("addInodeFile"):
                     outObject = mds.addInodeFile(input[1], Integer.parseInt(input[2]), Integer.parseInt(input[3]));
                     break;
+                case ("update"):
+                    outObject = mds.update(input[1], input[2], Integer.parseInt(input[3]), Integer.parseInt(input[4]));
+                    break;
+                case ("block"):
+                    outObject = mds.blockFile(input[1], input[2]);
+                    break;
+                case ("unblock"):
+                    outObject = mds.unblockFile(input[1], input[2]);
+                    break;
                 case ("addInodeDirectory"):
                     outObject = mds.addInodeDirectory(input[1]);
                     break;
                 case ("removeFile"):
-                    outObject = mds.removeFile(input[1]);
+                    outObject = mds.removeFile(input[1], input[2]);
                     break;
                 case ("removeDirectory"):
-                    outObject = mds.removeDirectory(input[1]);
+                    outObject = mds.removeDirectory(input[1], input[2]);
                     break;
                 case ("find"):
                     outObject = mds.find(input[1]);

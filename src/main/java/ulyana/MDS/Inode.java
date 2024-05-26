@@ -2,13 +2,19 @@ package ulyana.MDS;
 
 import java.io.Serializable;
 
-public abstract class Inode implements Serializable {
+public class Inode implements Serializable {
     //пока что только неизменяемые поля
-    protected int number;//номер inode
-    protected int size;//размер файла
-    protected String name;//имя
-    protected String layout;//расположение или путь до папки в которой inode лежит
-    protected int type;//тип 0 - файл, 1 - директория
+    private int number;//номер inode
+    private String name;//имя
+    private String layout;//расположение или путь до папки в которой inode лежит
+    private int type;//тип 0 - файл, 1 - директория
+
+    public Inode(String name, String layout, int number, int type) {
+        this.number = number;
+        this.name = name;
+        this.layout = layout;
+        this.type = type;
+    }
 
     public String toString() {
         return name;
@@ -21,8 +27,6 @@ public abstract class Inode implements Serializable {
     public String getLayout() {
         return layout;
     }
-
-    public abstract int size();
 
     public int getType() {
         return type;

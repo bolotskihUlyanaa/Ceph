@@ -33,7 +33,11 @@ public class MDSSaveToOSD extends Thread {
             int countBlockCurrent = (sizeCurrent / sizeBlock) + 1;
             CalculateOSD calculateOSD = new CalculateOSD(monitor);
             ArrayList<DiskBucket> osds = calculateOSD.getOSDs(inodeNumber);
-            Block block = osd.get(osds.get(0), inodeNumber);
+            Block block = null;
+            for(DiskBucket disk:osds) {
+                block = osd.get(disk, inodeNumber);
+                if (block != null) break;
+            }
             boolean wasSaved;
             if (block == null)
                 wasSaved = false;
@@ -48,11 +52,13 @@ public class MDSSaveToOSD extends Thread {
             block = new Block(inodeNumber, 0, sizeCurrentBytes);
             for (DiskBucket disk : osds) {
                 if (wasSaved) {
-                    if (!osd.remove(disk, inodeNumber))
-                        throw new Exception("Save mds to osd error \nRemove inode failure");
+                    osd.remove(disk, inodeNumber);
+                    //if (!osd.remove(disk, inodeNumber))
+                    //    throw new Exception("Save mds to osd error \nRemove inode failure");
                 }
-                if (!osd.put(disk, block))
-                    throw new Exception("Save mds to osd error \nSave file failure");
+                osd.put(disk, block);
+                //if (!osd.put(disk, block))
+                //    throw new Exception("Save mds to osd error \nSave file failure");
             }
 
             //делим mds на блоки
@@ -67,11 +73,13 @@ public class MDSSaveToOSD extends Thread {
                 osds = calculateOSD.getOSDs(inodeNumber);
                 for (DiskBucket disk : osds) {
                     if (wasSaved && countBlockPrev > i) {
-                        if (!osd.remove(disk, id))
-                            throw new Exception("Save mds to osd error \nRemove inode failure");
+                        osd.remove(disk, id);
+                        //if (!osd.remove(disk, id))
+                        //    throw new Exception("Save mds to osd error \nRemove inode failure");
                     }
-                    if (!osd.put(disk, block))
-                        throw new Exception("Save mds to osd error \nSave file failure");
+                    osd.put(disk, block);
+                    //if (!osd.put(disk, block))
+                    //    throw new Exception("Save mds to osd error \nSave file failure");
                 }
                 sizeCurrent -= sizeBlock;
             }
@@ -79,7 +87,6 @@ public class MDSSaveToOSD extends Thread {
             outputStream.close();
         } catch (Exception e) {
             System.out.println(e.getMessage());
-            e.printStackTrace();
         }
     }
 }
