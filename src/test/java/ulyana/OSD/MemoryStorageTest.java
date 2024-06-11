@@ -1,6 +1,9 @@
 package ulyana.OSD;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.Date;
+
 import static org.junit.Assert.*;
 
 public class MemoryStorageTest {
@@ -8,9 +11,9 @@ public class MemoryStorageTest {
     public void init(){//проверка методов save и remove
         //создаем хранилище из 3х блоков
         MemoryStorage storage = new MemoryStorage();
-        Block block1 = new Block("111", 0, new byte[100]);
-        Block block2 = new Block("222", 0, new byte[100]);
-        Block block3 = new Block("333", 0, new byte[100]);
+        Block block1 = new Block("111", 0, new byte[100], new Date());
+        Block block2 = new Block("222", 0, new byte[100], new Date());
+        Block block3 = new Block("333", 0, new byte[100], new Date());
         storage.save(block1);
         storage.save(block2);
         storage.save(block3);

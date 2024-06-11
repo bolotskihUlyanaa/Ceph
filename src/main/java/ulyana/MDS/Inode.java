@@ -1,6 +1,7 @@
 package ulyana.MDS;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Inode implements Serializable {
     //пока что только неизменяемые поля
@@ -34,5 +35,22 @@ public class Inode implements Serializable {
 
     public int getID() {
         return number;
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Inode inode = (Inode) o;
+        return number == inode.number && type == inode.type && name.equals(inode.name) && layout.equals(inode.layout);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(number, name, layout, type);
     }
 }

@@ -2,10 +2,11 @@ package ulyana.MDS;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Objects;
 
 //сервер метаданных, в нем хранится файловая система
 public class MDS implements Serializable {
-    private static final long SerialVersionUID = 1600;//для корректной сериализации
     private int ID = 1;
     final private InodeDirectory root;//корневой каталог
     private InodeDirectory curInode;//директория в которой мы сейчас находимся
@@ -39,7 +40,7 @@ public class MDS implements Serializable {
     //вернулась строка - это причина почему файл нельзя создать
     //вернулось число - номер inode который создали
     //почему возвращаем id? чтобы потом сохранить блоки а для этого нужен ID
-    public Object addInodeFile(String nameInode, int size, int countBlock) {
+    public Object addInodeFile(String nameInode, int size, int countBlock, Date date) {
         try {
             Pair pair = findDirectory(nameInode);//ищем директорию в которую нужно добавить файл
             if (pair.name == null)
@@ -47,7 +48,7 @@ public class MDS implements Serializable {
             //проверка не существует ли уже файл с таким названием
             if (pair.inode.searchFile(pair.name) != null)
                 throw new Exception("such file already exist: ".concat(nameInode));
-            InodeFile inode = new InodeFile(pair.name, pair.inode.getPath(), ID++, size, countBlock);
+            InodeFile inode = new InodeFile(pair.name, pair.inode.getPath(), ID++, size, countBlock, date);
             pair.inode.addInode(inode);//сохраняем новый inode в директорию
             return inode.getID();
         } catch(Exception ex) {
@@ -133,7 +134,7 @@ public class MDS implements Serializable {
             else {
                 InodeFile inodeFile = (InodeFile) inode.get(i);
                 if (!inodeFile.access(name)) throw new Exception("blocked files cannot be deleted");
-                inodesFile.add((InodeFile) inode.get(i));//если потомок файл - сохранить его inode
+                inodesFile.add(inodeFile);//если потомок файл - сохранить его inode
             }
         }
         inodesDir.add(0, inode);
@@ -231,31 +232,56 @@ public class MDS implements Serializable {
     }
 
     //чтобы обновить метаданные
-    public Object updateFile(String nameUser, String nameFile, int size, int countBlock) {
+    public Object updateFile(String nameUser, String nameFile, int size, int countBlock, Date date) {
         InodeFile file = find(nameFile);
         if (file == null) return "such file doesn't exist";
         if (!file.access(nameUser)) return "you don't have access to this file";
-        file.setSize(size);
+        file.setSize(size, date);
         file.setCountBlock(countBlock);
         return true;
     }
 
     //заблокировать файл
-    public Object blockFile(String nameUser, String nameFile) {
+    public Object blockFile(String nameUser, String nameFile, Date date) {
         if (nameUser == null || nameUser.equals("noname")) return "users without name can't block file";
         InodeFile file = find(nameFile);
         if (file == null) return "such file doesn't exist";
         if (!file.access(nameUser)) return "this file already block by " + file.getUserBlock();
-        file.setBlock(nameUser);
+        file.setBlock(nameUser, date);
         return true;
     }
 
     //разблокировать файл
-    public Object unblockFile(String nameUser, String nameFile) {
+    public Object unblockFile(String nameUser, String nameFile, Date date) {
         InodeFile file = find(nameFile);
         if (file == null) return "such file doesn't exist";
         if (!file.access(nameUser)) return "this file block by " + file.getUserBlock();
-        file.setBlock(null);
+        file.setBlock(null, date);
         return true;
+    }
+
+    public InodeDirectory getCurInode(){
+        return curInode;
+    }
+
+    public InodeDirectory getRootInode(){
+        return root;
+    }
+
+    public int getID(){
+        return ID;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MDS mds = (MDS) o;
+        return ID == mds.ID && root.equals(mds.root) && curInode.equals(mds.curInode);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(ID, root, curInode, ROOT);
     }
 }

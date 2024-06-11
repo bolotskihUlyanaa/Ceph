@@ -7,8 +7,8 @@ import java.util.*;
 //монитор хранит пока что только карту osd
 public class Monitor {
     private int OSDPoolDefaultSize;//коэффициент репликации
-    private ArrayList<Host> addressOSD;
-    final private Bucket clusterMap;//карта OSD
+    private List<Host> addressOSD;
+    private Bucket clusterMap;//карта OSD
     final private String nameFileConf = "cephConf.txt";
     private int port;//порт на котором слушает монитор
     private int pgNum;//количество плейсмент групп
@@ -24,6 +24,12 @@ public class Monitor {
                 this.condition = condition;
         }
 
+        public Host(InetAddress ip, int port, int condition) {
+            this.ip = ip;
+            this.port = port;
+            this.condition = condition;
+        }
+
         public String toString() {
             return ip.getHostAddress().concat(" ").concat(Integer.toString(port)).concat(" ").concat(Integer.toString(condition));
         }
@@ -37,6 +43,20 @@ public class Monitor {
             clusterMap.add(new DiskBucket(host.ip, host.port, host.condition));
         }
         //clusterMap.find(nameBucket).add(d); чтобы добавить потомка для определенного узла
+    }
+
+    public Monitor(int port, int OSDPoolDefaultSize, int pgNum, List<DiskBucket> disks) throws Exception {
+        this.pgNum = pgNum;
+        this.port = port;
+        this.OSDPoolDefaultSize = OSDPoolDefaultSize;
+        clusterMap = new Bucket("root", "root", 1);
+        for (DiskBucket disk:disks) {
+            clusterMap.add(disk);
+        }
+        addressOSD = new ArrayList<>();
+        for (DiskBucket disk:disks) {
+            addressOSD.add(new Host(disk.getIP(), disk.getPort(), 1));
+        }
     }
 
     public int getCountReplica() {
@@ -99,5 +119,28 @@ public class Monitor {
 
     public int getPGNum(){
         return pgNum;
+    }
+
+    public int setConditionToHost(InetAddress ipHost, int portHost, int condition){
+        if (condition == 0 || condition == 1) {
+            boolean f = false;
+            for (Host host : addressOSD) {
+                if (host.ip.equals(ipHost) && host.port == portHost) {
+                    host.condition = condition;
+                    f = true;
+                    break;
+                }
+            }
+            if (!f) {
+                Host hostNew = new Host(ipHost, portHost, condition);
+                addressOSD.add(hostNew);
+            }
+            clusterMap = new Bucket("root", "root", 1);
+            for (Host i : addressOSD) {
+                clusterMap.add(new DiskBucket(i.ip, i.port, i.condition));
+            }
+            return 1;
+        }
+        return 0;
     }
 }

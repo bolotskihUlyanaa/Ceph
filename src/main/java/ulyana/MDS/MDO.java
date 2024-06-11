@@ -1,6 +1,6 @@
 package ulyana.MDS;
 
-import java.util.ArrayList;
+import java.util.Date;
 
 //операции взаимодействия с mds напрямую без сокетов
 public class MDO implements MetaDataOperation {
@@ -18,8 +18,8 @@ public class MDO implements MetaDataOperation {
         return(mds.removeDirectory(name, nameInode));
     }
 
-    public Object addInodeFile(String nameInode, int size, int countBlock) {
-        return mds.addInodeFile(nameInode, size, countBlock);
+    public Object addInodeFile(String nameInode, int size, int countBlock, Date date) {
+        return mds.addInodeFile(nameInode, size, countBlock, date);
     }
 
     //найти по имени файла файл в файловой системе
@@ -43,15 +43,15 @@ public class MDO implements MetaDataOperation {
         return mds.pwd();
     }
 
-    public Object update(String nameUser, String nameInode, int size, int countBlock) {
-        return mds.updateFile(nameUser, nameInode, size, countBlock);
+    public Object update(String nameUser, String nameInode, int size, int countBlock, Date date) {
+        return mds.updateFile(nameUser, nameInode, size, countBlock, date);
     }
 
-    public Object block(String nameUser, String nameInode) {
-        return mds.blockFile(nameUser, nameInode);
+    public Object block(String nameUser, String nameInode, Date date) {
+        return mds.blockFile(nameUser, nameInode, date);
     }
 
-    public Object unblock(String nameUser, String nameInode) {
-        return mds.unblockFile(nameUser, nameInode);
+    public Object unblock(String nameUser, String nameInode, Date date) {
+        return mds.unblockFile(nameUser, nameInode, date);
     }
 }

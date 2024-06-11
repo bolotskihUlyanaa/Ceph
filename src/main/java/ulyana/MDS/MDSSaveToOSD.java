@@ -4,6 +4,7 @@ import ulyana.Monitor.*;
 import ulyana.OSD.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Date;
 import static java.lang.String.*;
 
 //отдельный поток для сохранения на osd
@@ -22,6 +23,7 @@ public class MDSSaveToOSD extends Thread {
 
     public void run() {
         try {
+            Date date = new Date();
             //представляем mds в виде потока байтов
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ObjectOutputStream out = new ObjectOutputStream(outputStream);
@@ -49,7 +51,7 @@ public class MDSSaveToOSD extends Thread {
                 int sizePrevious = Integer.parseInt(sizeStringPrevious);
                 countBlockPrev = (sizePrevious / sizeBlock) + 1;
             }
-            block = new Block(inodeNumber, 0, sizeCurrentBytes);
+            block = new Block(inodeNumber, 0, sizeCurrentBytes, date);
             for (DiskBucket disk : osds) {
                 if (wasSaved) {
                     osd.remove(disk, inodeNumber);
@@ -69,7 +71,7 @@ public class MDSSaveToOSD extends Thread {
                 byte[] data = new byte[countRead];
                 System.arraycopy(mdsByte, i * sizeBlock, data, 0, countRead);
                 String id = inodeNumber.concat(".") + i;
-                block = new Block(id, sizeBlock * i, data);
+                block = new Block(id, sizeBlock * i, data, date);
                 osds = calculateOSD.getOSDs(inodeNumber);
                 for (DiskBucket disk : osds) {
                     if (wasSaved && countBlockPrev > i) {

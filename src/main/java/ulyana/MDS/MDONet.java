@@ -1,8 +1,9 @@
 package ulyana.MDS;
 
 import ulyana.Client.SendThread;
+
 import java.net.InetAddress;
-import java.util.ArrayList;
+import java.util.Date;
 
 //операции взаимодействия с mds с помощью сокетов
 public class MDONet implements MetaDataOperation {
@@ -15,8 +16,8 @@ public class MDONet implements MetaDataOperation {
         this.port = port;
     }
 
-    public Object addInodeFile(String nameInode, int size, int countBlock) throws Exception {
-        return SendThread.send(ip, port,"addInodeFile " + nameInode + " " + size + " " + countBlock);
+    public Object addInodeFile(String nameInode, int size, int countBlock, Date date) throws Exception {
+        return SendThread.send(ip, port,"addInodeFile " + nameInode + " " + size + " " + countBlock + " " + date.getTime());
     }
 
     public Object addInodeDirectory(String nameInode) throws Exception {
@@ -54,15 +55,15 @@ public class MDONet implements MetaDataOperation {
         return (String) SendThread.send(ip, port, "pwd");
     }
 
-    public Object update(String nameUser, String nameInode, int size, int countBlock) throws Exception {
-        return SendThread.send(ip, port,"update " + nameUser + " " + nameInode + " " + size + " " + countBlock);
+    public Object update(String nameUser, String nameInode, int size, int countBlock, Date date) throws Exception {
+        return SendThread.send(ip, port,"update " + nameUser + " " + nameInode + " " + size + " " + countBlock + " " + date.getTime());
     }
 
-    public Object block(String nameUser, String nameInode) throws Exception {
-        return SendThread.send(ip, port,"block " + nameUser + " " + nameInode);
+    public Object block(String nameUser, String nameInode, Date date) throws Exception {
+        return SendThread.send(ip, port,"block " + nameUser + " " + nameInode + " " + date.getTime());
     }
 
-    public Object unblock(String nameUser, String nameInode) throws Exception {
-        return SendThread.send(ip, port,"unblock " + nameUser + " " + nameInode);
+    public Object unblock(String nameUser, String nameInode, Date date) throws Exception {
+        return SendThread.send(ip, port,"unblock " + nameUser + " " + nameInode + " " + date.getTime());
     }
 }

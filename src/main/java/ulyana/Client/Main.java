@@ -19,7 +19,7 @@ public class Main {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             while (true) {
                 try {
-                    System.out.print("%");
+                    System.out.print("% ");
                     client.commandLine(reader.readLine().trim());
                 } catch (Exception e) {
                     System.out.println(e.getMessage());

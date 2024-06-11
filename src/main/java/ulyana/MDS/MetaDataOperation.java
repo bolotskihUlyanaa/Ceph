@@ -1,6 +1,7 @@
 package ulyana.MDS;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 //интерфейс для операций с метаданными
 public interface MetaDataOperation {
@@ -9,7 +10,7 @@ public interface MetaDataOperation {
 
     Object removeDirectory(String name, String nameInode) throws Exception;
 
-    Object addInodeFile(String nameInode, int size, int countBlock) throws Exception;
+    Object addInodeFile(String nameInode, int size, int countBlock, Date date) throws Exception;
 
     InodeFile find(String nameInode) throws Exception;
 
@@ -21,9 +22,9 @@ public interface MetaDataOperation {
 
     String pwd() throws Exception;
 
-    Object update(String nameUser, String nameInode, int size, int countBlock) throws Exception;
+    Object update(String nameUser, String nameInode, int size, int countBlock, Date date) throws Exception;
 
-    Object block(String nameUser, String nameInode) throws Exception;
+    Object block(String nameUser, String nameInode, Date date) throws Exception;
 
-    Object unblock(String nameUser, String nameInode) throws Exception;
+    Object unblock(String nameUser, String nameInode, Date date) throws Exception;
 }

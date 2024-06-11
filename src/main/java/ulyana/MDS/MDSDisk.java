@@ -4,6 +4,7 @@ import ulyana.OSD.*;
 import ulyana.Monitor.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Date;
 
 //операции если mds хранится на OSD
 //после каждого изменения пересохраняется на диски
@@ -20,8 +21,8 @@ public class MDSDisk {
         loadFromOSD();
     }
 
-    public Object addInodeFile(String nameInode, int size, int countBlock) throws Exception {
-        Object result = mds.addInodeFile(nameInode, size, countBlock);
+    public Object addInodeFile(String nameInode, int size, int countBlock, Date date) throws Exception {
+        Object result = mds.addInodeFile(nameInode, size, countBlock, date);
         if (result instanceof Integer) {
             MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
             save.start();
@@ -66,24 +67,24 @@ public class MDSDisk {
         return mds.ls(nameInode);
     }
 
-    public Object update(String nameUser, String nameInode, int size, int countBlock) throws Exception {
-        Object result = mds.updateFile(nameUser, nameInode, size, countBlock);
+    public Object update(String nameUser, String nameInode, int size, int countBlock, Date date) throws Exception {
+        Object result = mds.updateFile(nameUser, nameInode, size, countBlock, date);
         MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
         save.start();
         save.join();
         return result;
     }
 
-    public Object blockFile(String nameUser, String nameInode) throws Exception {
-        Object result = mds.blockFile(nameUser, nameInode);
+    public Object blockFile(String nameUser, String nameInode, Date date) throws Exception {
+        Object result = mds.blockFile(nameUser, nameInode, date);
         MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
         save.start();
         save.join();
         return result;
     }
 
-    public Object unblockFile(String nameUser, String nameInode) throws Exception {
-        Object result = mds.unblockFile(nameUser, nameInode);
+    public Object unblockFile(String nameUser, String nameInode, Date date) throws Exception {
+        Object result = mds.unblockFile(nameUser, nameInode, date);
         MDSSaveToOSD save = new MDSSaveToOSD(mds, osd, monitor);
         save.start();
         save.join();
@@ -140,5 +141,13 @@ public class MDSDisk {
         else {
             mds = new MDS();
         }
+    }
+
+    public MDS getMDS(){
+        return mds;
+    }
+
+    public InodeDirectory getRoot(){
+        return mds.getRootInode();
     }
 }

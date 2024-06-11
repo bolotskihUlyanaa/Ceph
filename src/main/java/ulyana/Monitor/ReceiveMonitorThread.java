@@ -2,6 +2,7 @@ package ulyana.Monitor;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
 
 //поток для получения запросов на информацию из конфигурационного файла
@@ -25,6 +26,13 @@ public class ReceiveMonitorThread extends Thread {
                 outObject = monitor.getCountReplica();
             if(command.equals("get count of pg"))
                 outObject = monitor.getPGNum();
+            if(command.startsWith("osdChangeCon")) {
+                String[] args = command.split(" ");
+                if (args.length != 4) outObject = 0;
+                else {
+                    outObject = monitor.setConditionToHost(InetAddress.getByName(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]));
+                }
+            }
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(outObject);
             in.close();

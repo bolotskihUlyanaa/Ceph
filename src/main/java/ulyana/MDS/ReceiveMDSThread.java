@@ -2,6 +2,7 @@ package ulyana.MDS;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Date;
 
 //поток для работы с конкретным клиентом
 //получение запросов по сокетам и отправка результата выполнения фунций в mds
@@ -22,16 +23,16 @@ public class ReceiveMDSThread extends Thread {
             String[] input = inObject.split(" ");
             switch (input[0]) {
                 case ("addInodeFile"):
-                    outObject = mds.addInodeFile(input[1], Integer.parseInt(input[2]), Integer.parseInt(input[3]));
+                    outObject = mds.addInodeFile(input[1], Integer.parseInt(input[2]), Integer.parseInt(input[3]), new Date(Long.parseLong(input[4])));
                     break;
                 case ("update"):
-                    outObject = mds.update(input[1], input[2], Integer.parseInt(input[3]), Integer.parseInt(input[4]));
+                    outObject = mds.update(input[1], input[2], Integer.parseInt(input[3]), Integer.parseInt(input[4]), new Date(Long.parseLong(input[5])));
                     break;
                 case ("block"):
-                    outObject = mds.blockFile(input[1], input[2]);
+                    outObject = mds.blockFile(input[1], input[2], new Date(Long.parseLong(input[3])));
                     break;
                 case ("unblock"):
-                    outObject = mds.unblockFile(input[1], input[2]);
+                    outObject = mds.unblockFile(input[1], input[2], new Date(Long.parseLong(input[3])));
                     break;
                 case ("addInodeDirectory"):
                     outObject = mds.addInodeDirectory(input[1]);
@@ -53,6 +54,9 @@ public class ReceiveMDSThread extends Thread {
                     break;
                 case ("pwd"):
                     outObject = mds.pwd();
+                    break;
+                case("mds"):
+                    outObject = mds.getRoot();
                     break;
             }
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());

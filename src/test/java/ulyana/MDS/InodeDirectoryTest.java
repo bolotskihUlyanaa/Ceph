@@ -2,6 +2,8 @@ package ulyana.MDS;
 
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
+import java.util.Date;
+
 import static org.junit.Assert.*;
 
 public class InodeDirectoryTest {
@@ -12,7 +14,7 @@ public class InodeDirectoryTest {
         InodeDirectory root = new InodeDirectory("root", "", 1);
         InodeDirectory users = new InodeDirectory("users", "/root", 2);
         InodeDirectory application = new InodeDirectory("application", "/root", 3);
-        InodeFile file = new InodeFile("file.txt", "/root", 4, 1000, 1);
+        InodeFile file = new InodeFile("file.txt", "/root", 4, 1000, 1, new Date());
         //проверка addInode
         root.addInode(users);
         root.addInode(application);

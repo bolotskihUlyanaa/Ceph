@@ -2,6 +2,7 @@ package ulyana.MDS;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Objects;
 
 //inode типа директория
 public class InodeDirectory extends Inode implements Serializable {
@@ -9,7 +10,7 @@ public class InodeDirectory extends Inode implements Serializable {
 
     public InodeDirectory(String nameInode, String path, int numberInode) {
         super(nameInode, path, numberInode, 1);
-        nodes = new ArrayList<Inode>();
+        nodes = new ArrayList<>();
     }
 
     //добавить потомка
@@ -51,6 +52,20 @@ public class InodeDirectory extends Inode implements Serializable {
                 break;
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InodeDirectory inode = (InodeDirectory) o;
+        return nodes.equals(inode.nodes) && getID() == inode.getID() && getName().equals(inode.getName())
+                && getLayout().equals(inode.getLayout()) && getType() == inode.getType();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nodes);
     }
 
     //удалить всех потомков

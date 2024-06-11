@@ -5,7 +5,7 @@ import ulyana.MDS.*;
 import ulyana.OSD.*;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.Date;
 
 //для работы с CephFS надо всегда добавлять приставку /ceph/
 public class Client {
@@ -44,7 +44,7 @@ public class Client {
                             try {
                                 if (command[i].equals(""))
                                     throw new RuntimeException("you can't create file without name");
-                                Object result = mds.addInodeFile(command[i], 0, 0);
+                                Object result = mds.addInodeFile(command[i], 0, 0, new Date());
                                 if (result instanceof String) //если вернулась строка то значит там сообщение об ошибке
                                     throw new RuntimeException((String) result);
                             } catch (Exception ex) {
@@ -197,7 +197,7 @@ public class Client {
                             try {
                                 if (command[i].equals(""))
                                     throw new RuntimeException("you can't block file without name");
-                                Object result = mds.block(name, command[i]);
+                                Object result = mds.block(name, command[i], new Date());
                                 if (result instanceof String) //если вернулась строка то значит там сообщение об ошибке
                                     throw new RuntimeException((String) result);
                             } catch (Exception ex) {
@@ -213,7 +213,7 @@ public class Client {
                             try {
                                 if (command[i].equals(""))
                                     throw new RuntimeException("you can't unblock file without name");
-                                Object result = mds.unblock(name, command[i]);
+                                Object result = mds.unblock(name, command[i], new Date());
                                 if (result instanceof String) //если вернулась строка то значит там сообщение об ошибке
                                     throw new RuntimeException((String) result);
                             } catch (Exception ex) {
@@ -234,6 +234,7 @@ public class Client {
     //копирование из локального компьютера в ceph
     //передается текущая директория, имя файла и имя файла куда сохранить
     public void copyInodeToFS(File directory, String nameFileCopy, String nameInode, boolean force) throws Exception {
+        Date date = new Date();
         File file = new File(directory, nameFileCopy);
         if (!file.exists())
             throw new RuntimeException("such file doesn't exist: ".concat(nameFileCopy));
@@ -244,19 +245,19 @@ public class Client {
         InodeFile searchInode = mds.find(nameInode);
         if (searchInode != null) {//если такой файл уже есть
             if (force) {
-                Object resultUpdate = mds.update(name, nameInode, size, countBlock);
+                Object resultUpdate = mds.update(name, nameInode, size, countBlock, date);
                 if (resultUpdate instanceof String) throw new RuntimeException((String) resultUpdate);
                 removeInode(searchInode);
                 result = searchInode.getID();
             }
         }
         else {//если такого файла нет то создаем
-            result = mds.addInodeFile(nameInode, size, countBlock);
+            result = mds.addInodeFile(nameInode, size, countBlock, date);
         }
         if (result instanceof Integer) {//если вернулось число - это ID inode который создался в файловой системе
             int inodeID = (int) result;
             int countRead = sizeBlock;//сколько байт считать в блок
-            CalculateOSD calculateOSD =  new CalculateOSD(monitor);
+            CalculateOSD calculateOSD = new CalculateOSD(monitor);
             for (int i = 0; i < countBlock; i++) { //делим файл на блоки
                 if (fileBytes.available() < countRead)
                     countRead = fileBytes.available();
@@ -264,7 +265,7 @@ public class Client {
                 fileBytes.read(data);
                 String idBlock = inodeID + "." + i;
                 ArrayList<DiskBucket> osds = calculateOSD.getOSDs(idBlock);
-                Block block = new Block(idBlock, i * sizeBlock, data);
+                Block block = new Block(idBlock, i * sizeBlock, data, date);
                 for (DiskBucket disk : osds) {
                     osd.put(disk, block);
                     //if (!osd.put(disk, block))
@@ -314,9 +315,10 @@ public class Client {
 
     //копирование файла внутри файловой системы ceph
     public void copyInodeFS(String nameInodeSource, String nameInodeDestination) throws Exception{
+        Date date = new Date();
         InodeFile inodeSource = mds.find(nameInodeSource);
         if (inodeSource != null) {
-            Object result = mds.addInodeFile(nameInodeDestination, inodeSource.size(), inodeSource.getCountBlock());
+            Object result = mds.addInodeFile(nameInodeDestination, inodeSource.size(), inodeSource.getCountBlock(), date);
             if (result instanceof Integer) {//возвращает int это ID inode который создался
                 int idDestination = (int) result;
                 int idSource = inodeSource.getID();//узнаем номер inode, копия которого будет создана
@@ -334,7 +336,7 @@ public class Client {
                     byte[] data = blockSource.getData();
                     String idBlockDestination = idDestination + "." + i;
                     ArrayList<DiskBucket> osdsDestination = calculateOSD.getOSDs(idBlockDestination);
-                    Block block = new Block(idBlockDestination, i * sizeBlock, data);
+                    Block block = new Block(idBlockDestination, i * sizeBlock, data, date);
                     for (DiskBucket disk : osdsDestination) {
                         osd.put(disk, block);
                         //if (!osd.put(disk, block))
